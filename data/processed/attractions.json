@@ -1,0 +1,1113 @@
+{
+  "metadata": {
+    "source": "Taitung County Government Open Data",
+    "source_url": "https://data.taitung.gov.tw/",
+    "last_updated": "2026-09-12",
+    "total_records": 58,
+    "filter_district": "台東市"
+  },
+  "attractions": [
+    {
+      "id": "Hotel_A15010000H_000317",
+      "name": "蘭舍民宿",
+      "city": "台東縣",
+      "district": "臺東市",
+      "category": "accommodation",
+      "tags": [
+        "accommodation"
+      ],
+      "description": "取名「蘭舍」，蘭花為台東縣花，且為民宿女主人芳名中的末字，民宿男主人貼心巧思，甚為動人，其得天獨厚的地理環境，可觀山．觀海．觀日出，而民宿內部更是舒適乾淨的休憩環境，入住此地的旅人啊，必能消除旅程中的疲憊。泡杯咖啡，坐在二樓觀景台，遠望湛藍的大海，呼吸著台東純淨的空氣，享受著台東溫暖的陽光，讓自己好好的放鬆一下！蘭舍位於台東市，鄰近小野柳、森林公園、琵琶湖、海濱公園、鯉魚山、卑南文化公園、史前博物館、新園社區等景點。如果不知該往哪玩，不妨問問老闆與老闆娘，他們會以專業的資訊，親切的態度為您解說哦！！",
+      "address": "青海路四段491巷26號",
+      "latitude": null,
+      "longitude": null,
+      "family_suitability": null,
+      "indoor_outdoor": null,
+      "source": "交通部觀光署",
+      "source_url": "https://media.taiwan.net.tw/",
+      "last_updated": "2025/6/3 上午 11:58:11"
+    },
+    {
+      "id": "Hotel_A15010000H_000989",
+      "name": "背包倉庫肆零居",
+      "city": "台東縣",
+      "district": "臺東市",
+      "category": "accommodation",
+      "tags": [
+        "accommodation"
+      ],
+      "description": "台東市中心國際背包客棧位於臺東縣的民宿，住宿一樓交誼廳提供旅人們交流交友的空間也設有DVD電影，旅游書籍，公共電腦等設施。觀光夜市步行1分鐘鄰近鐵花村、轉運站、海濱公園單車友善室內停放鄰近超市、超商、投幣式洗衣店台東縣民宿1258號",
+      "address": "文化街40號",
+      "latitude": null,
+      "longitude": null,
+      "family_suitability": null,
+      "indoor_outdoor": null,
+      "source": "交通部觀光署",
+      "source_url": "https://media.taiwan.net.tw/",
+      "last_updated": "2026/8/28 下午 02:48:54"
+    },
+    {
+      "id": "Hotel_A15010000H_002058",
+      "name": "康橋商旅-台東館",
+      "city": "台東縣",
+      "district": "臺東市",
+      "category": "accommodation",
+      "tags": [
+        "accommodation"
+      ],
+      "description": "康橋大飯店－台東館．榮獲民眾票選勝出，觀光局頒發之『台灣百大幸福旅宿』。．本館榮獲88.89.91年度台東縣優良旅館評鑑第一名．本館榮獲89.90.91.92.年度台東縣最佳消防管理單位．本館榮獲93年度台東縣公眾場所最佳消防管理人獎第一名康橋商旅長期以穩定優良的品質為經營理念，提供旅客及出差客更多乾淨舒適的住宿環境。",
+      "address": "中興路一段209巷16號1-7樓",
+      "latitude": null,
+      "longitude": null,
+      "family_suitability": null,
+      "indoor_outdoor": null,
+      "source": "交通部觀光署",
+      "source_url": "https://media.taiwan.net.tw/",
+      "last_updated": "2025/6/18 上午 10:46:56"
+    },
+    {
+      "id": "Hotel_A15010000H_003920",
+      "name": "艾兒民宿",
+      "city": "台東縣",
+      "district": "臺東市",
+      "category": "accommodation",
+      "tags": [
+        "accommodation"
+      ],
+      "description": "入住艾兒民宿 l 包棟 l 按訂房人數開放房間8-21人，享受完美的度假村別墅住宿體驗。 住宿位於台東縣台東市的絕佳位置，讓您輕鬆探索熱門景點和餐飲選擇。 這間3星級飯店的設施十分完善，可大大提升您的住宿品質，為旅程增添歡樂。",
+      "address": "安和路101巷5號",
+      "latitude": null,
+      "longitude": null,
+      "family_suitability": null,
+      "indoor_outdoor": null,
+      "source": "交通部觀光署",
+      "source_url": "https://media.taiwan.net.tw/",
+      "last_updated": "2026/8/28 下午 05:00:32"
+    },
+    {
+      "id": "Hotel_A15010000H_007862",
+      "name": "東陽峇里商旅酒店",
+      "city": "台東縣",
+      "district": "臺東市",
+      "category": "accommodation",
+      "tags": [
+        "accommodation"
+      ],
+      "description": "台東峇里商旅酒店座落於繁華的台東市區內，館內大廳洋溢著濃郁的渡假風情，搭配著慵懶的峇里樂聲和貼心專業的服務人員，充分呈現出台東所在地的南島氛圍。台東峇里商旅酒店擁有135間寬敞、潔淨、明亮的舒適套房，包含峇里蜜月房、峇里雙人房、峇里四人房、峇里VIP豪華家庭四人房、商務單人房、精緻雙人房、標準雙人房、家庭四人房、VIP豪華家庭四人房與家庭六人房等各式房型，提供旅客最優質的台東住宿空間。每間客房都提供有線電視節目、吹風機以及冷氣空調，齊全的衛浴設備、衛浴日用品，提供電視、衣櫃、梳妝台、電話、冰箱等設施，並依房型附贈中西自助式早餐。除此之外，每間客房皆提供無線上網功能 (需自備筆記型電腦)。本酒店清潔、高雅、舒適的住宿環境使您感覺賓至如歸，不論台東旅遊、綠島旅遊、蘭嶼旅遊或是出差洽公，本酒店都是您最好的選擇。餐飲美食部份，本酒店每天從早晨07:00至09:30，都為每位住宿旅客準備豐盛的中西自助式早餐。菜色變化多樣，營養又豐富，精緻的早餐更讓您活力充沛、精神飽滿的迎接這一天快樂的旅程！此外，本酒店二樓太平洋時尚海鮮餐廳的餐飲空間能夠滿足32張以上的婚宴喜慶 (包含獨立包廂)，餐廳除了提供各式台式海鮮合菜之外，更首創阿美族的海洋風味料理與各種風味的特色佳餚，期待能提供給台東縣市地區一個嶄新的用餐氛圍，度過一個更快樂美好的用餐聚會時光。台東峇里商旅酒店擁有位於台東市區這得天獨厚的地理環境，距離台東火車站、台東機場或是台東市各觀光景點，都非常的方便。本酒店期望提供給來台東旅遊、綠島旅遊或是蘭嶼旅遊的旅客便利的台東線上訂房服務，更能有一個舒適自在的台東飯店住宿環境。而本酒店既是商務會館、旅者客棧、渡假旅館，也是背包客的好去處，讓您在悠遊台東山水的同時也能保持工作效率，卻不忘在繁華塵囂中許您一個寧靜，台東峇里商旅酒店全體員工，誠摯期待您的光臨。",
+      "address": "鄭州街11號1,3-7樓",
+      "latitude": null,
+      "longitude": null,
+      "family_suitability": null,
+      "indoor_outdoor": null,
+      "source": "交通部觀光署",
+      "source_url": "https://media.taiwan.net.tw/",
+      "last_updated": "2026/8/28 下午 05:27:22"
+    },
+    {
+      "id": "Hotel_A15010000H_008267",
+      "name": "自在軒民宿",
+      "city": "台東縣",
+      "district": "臺東市",
+      "category": "accommodation",
+      "tags": [
+        "accommodation"
+      ],
+      "description": "自在軒民宿位於台東縣台東市豐榮里漢陽南路139巷69號，鄰近自在軒民宿的景點有海洋驛站（靜洋安檢所）、活水湖、十股綠色隧道、國立台灣史前文化博物館、小野柳、台東森林公園、卑南文化公園、台東鐵道藝術村、台東豐源國小、台東鯉魚山公園、台東美術館、富岡港口、國際地標、嘉明湖國家步道、首任民選縣長陳振宗紀念碑、海山寺、琵琶湖、忠烈祠、天后宮、海濱公園、龍鳳佛堂、原住民文化藝術會館、台東霍爾的移動城堡，自在軒民宿竭誠的邀請您的蒞臨。",
+      "address": "豐榮里漢陽南路139巷69號",
+      "latitude": null,
+      "longitude": null,
+      "family_suitability": null,
+      "indoor_outdoor": null,
+      "source": "交通部觀光署",
+      "source_url": "https://media.taiwan.net.tw/",
+      "last_updated": "2026/1/18 下午 08:47:36"
+    },
+    {
+      "id": "Hotel_A15010000H_009535",
+      "name": "水藝芳民宿",
+      "city": "台東縣",
+      "district": "臺東市",
+      "category": "accommodation",
+      "tags": [
+        "accommodation"
+      ],
+      "description": "位於台東縣的民宿，台東市區，遴近台東海濱公園、活水湖、台東森林公園，星期日晚上特有的「四维路假日夜市」就在我們巷口",
+      "address": "四維路一段300巷30號",
+      "latitude": null,
+      "longitude": null,
+      "family_suitability": null,
+      "indoor_outdoor": null,
+      "source": "交通部觀光署",
+      "source_url": "https://media.taiwan.net.tw/",
+      "last_updated": "2026/1/21 下午 05:07:58"
+    },
+    {
+      "id": "Hotel_A15010000H_014087",
+      "name": "荷比8號電梯民宿",
+      "city": "台東縣",
+      "district": "臺東市",
+      "category": "accommodation",
+      "tags": [
+        "accommodation"
+      ],
+      "description": "台東縣合法民宿1423號",
+      "address": "中興路三段275巷46弄8號",
+      "latitude": null,
+      "longitude": null,
+      "family_suitability": null,
+      "indoor_outdoor": null,
+      "source": "交通部觀光署",
+      "source_url": "https://media.taiwan.net.tw/",
+      "last_updated": "2026/1/21 下午 04:52:25"
+    },
+    {
+      "id": "Hotel_A15010000H_014844",
+      "name": "佳慧民宿",
+      "city": "台東縣",
+      "district": "臺東市",
+      "category": "accommodation",
+      "tags": [
+        "accommodation"
+      ],
+      "description": "台東民宿‧佳慧民宿台東縣編號0686的合法民宿，位置坐落於台東市區，驅車前往大啖台東豬血湯、寶桑湯圓、米苔目等道地的知名小吃僅需10分鐘內路程即可輕鬆抵達；造訪海濱公園、鐵花村音樂聚落、鐵道藝術村等熱門景點也很便利，旅人們不但可以盡情欣賞台東的壯麗山水，更可以拋下城市的喧囂和煩擾，恣意享受後山的樸實幽靜。「台東民宿‧佳慧民宿」為新穎的透天建築，現代化的俐落外觀，以大地色系和灰黑色調為主，呈現低調巍峨的大方氣勢。開闊雅緻的大廳空間、優雅高雅的客房空間，一如一貫的簡潔格調，保留空間的原始格局，置入完整的家具設施，提供旅人們一處溫馨安居的舒適領域，帶給您如家一般的自在愜意。",
+      "address": "豐榮路260號",
+      "latitude": null,
+      "longitude": null,
+      "family_suitability": null,
+      "indoor_outdoor": null,
+      "source": "交通部觀光署",
+      "source_url": "https://media.taiwan.net.tw/",
+      "last_updated": "2026/8/26 上午 11:53:23"
+    },
+    {
+      "id": "Hotel_A15010000H_026277",
+      "name": "時尚玩家民宿",
+      "city": "台東縣",
+      "district": "臺東市",
+      "category": "accommodation",
+      "tags": [
+        "accommodation"
+      ],
+      "description": "時尚玩家民宿位於台東縣新站二街29號，離火車站走路大約需10分鐘以內，附近也有7-11、全家、早餐店，地理位置是非常好的。此民宿為四層樓，客廳採紫色主題，採用英式沙發、64吋大電視、大理石茶桌。總共有5間套房，二樓兩間四人房，三樓兩間雙人房，四樓四人房，歡迎大家來住宿。",
+      "address": "岩灣里1鄰新站二街29號",
+      "latitude": null,
+      "longitude": null,
+      "family_suitability": null,
+      "indoor_outdoor": null,
+      "source": "交通部觀光署",
+      "source_url": "https://media.taiwan.net.tw/",
+      "last_updated": "2026/8/28 下午 06:12:52"
+    },
+    {
+      "id": "Hotel_A15010000H_026788",
+      "name": "知本赫克力士親子民宿",
+      "city": "台東縣",
+      "district": "臺東市",
+      "category": "accommodation",
+      "tags": [
+        "accommodation"
+      ],
+      "description": "位於臺東縣的民宿(台東縣民宿第1618號)",
+      "address": "富裕路502巷11弄16號",
+      "latitude": null,
+      "longitude": null,
+      "family_suitability": null,
+      "indoor_outdoor": null,
+      "source": "交通部觀光署",
+      "source_url": "https://media.taiwan.net.tw/",
+      "last_updated": "2025/8/19 下午 03:55:35"
+    },
+    {
+      "id": "Hotel_A15010000H_031812",
+      "name": "亞舍斯民宿",
+      "city": "台東縣",
+      "district": "臺東市",
+      "category": "accommodation",
+      "tags": [
+        "accommodation"
+      ],
+      "description": "位於台東縣的民宿，歡迎來電詢問最新優惠房價",
+      "address": "新興路101巷72號",
+      "latitude": null,
+      "longitude": null,
+      "family_suitability": null,
+      "indoor_outdoor": null,
+      "source": "交通部觀光署",
+      "source_url": "https://media.taiwan.net.tw/",
+      "last_updated": "2025/8/18 下午 01:18:54"
+    },
+    {
+      "id": "Hotel_A15010000H_031814",
+      "name": "成癮旅舍",
+      "city": "台東縣",
+      "district": "臺東市",
+      "category": "accommodation",
+      "tags": [
+        "accommodation"
+      ],
+      "description": "位於台東縣的民宿",
+      "address": "正氣路94號",
+      "latitude": null,
+      "longitude": null,
+      "family_suitability": null,
+      "indoor_outdoor": null,
+      "source": "交通部觀光署",
+      "source_url": "https://media.taiwan.net.tw/",
+      "last_updated": "2026/8/25 下午 12:11:21"
+    },
+    {
+      "id": "Hotel_A15010000H_031830",
+      "name": "坤living民宿",
+      "city": "台東縣",
+      "district": "臺東市",
+      "category": "accommodation",
+      "tags": [
+        "accommodation"
+      ],
+      "description": "位於台東縣的民宿",
+      "address": "漢中街185巷46弄45號",
+      "latitude": null,
+      "longitude": null,
+      "family_suitability": null,
+      "indoor_outdoor": null,
+      "source": "交通部觀光署",
+      "source_url": "https://media.taiwan.net.tw/",
+      "last_updated": "2025/9/2 下午 03:30:00"
+    },
+    {
+      "id": "Hotel_A15010000H_031848",
+      "name": "浪閣33民宿",
+      "city": "台東縣",
+      "district": "臺東市",
+      "category": "accommodation",
+      "tags": [
+        "accommodation"
+      ],
+      "description": "位於台東縣的民宿",
+      "address": "新站三街33號",
+      "latitude": null,
+      "longitude": null,
+      "family_suitability": null,
+      "indoor_outdoor": null,
+      "source": "交通部觀光署",
+      "source_url": "https://media.taiwan.net.tw/",
+      "last_updated": "2025/6/4 上午 11:24:46"
+    },
+    {
+      "id": "Hotel_A15010000H_031849",
+      "name": "浪閣35民宿",
+      "city": "台東縣",
+      "district": "臺東市",
+      "category": "accommodation",
+      "tags": [
+        "accommodation"
+      ],
+      "description": "位於台東縣的民宿",
+      "address": "新站三街35號",
+      "latitude": null,
+      "longitude": null,
+      "family_suitability": null,
+      "indoor_outdoor": null,
+      "source": "交通部觀光署",
+      "source_url": "https://media.taiwan.net.tw/",
+      "last_updated": "2025/6/4 上午 11:25:10"
+    },
+    {
+      "id": "Hotel_A15010000H_032006",
+      "name": "TiTiHome親子民宿",
+      "city": "台東縣",
+      "district": "臺東市",
+      "category": "accommodation",
+      "tags": [
+        "accommodation"
+      ],
+      "description": "位於台東縣的民宿",
+      "address": "新站路13巷26號",
+      "latitude": null,
+      "longitude": null,
+      "family_suitability": null,
+      "indoor_outdoor": null,
+      "source": "交通部觀光署",
+      "source_url": "https://media.taiwan.net.tw/",
+      "last_updated": "2025/6/4 上午 11:25:52"
+    },
+    {
+      "id": "Hotel_A15010000H_032030",
+      "name": "宿嘻民宿",
+      "city": "台東縣",
+      "district": "臺東市",
+      "category": "accommodation",
+      "tags": [
+        "accommodation"
+      ],
+      "description": "位於台東縣的民宿",
+      "address": "強國街101巷20號",
+      "latitude": null,
+      "longitude": null,
+      "family_suitability": null,
+      "indoor_outdoor": null,
+      "source": "交通部觀光署",
+      "source_url": "https://media.taiwan.net.tw/",
+      "last_updated": "2025/3/4 下午 03:26:29"
+    },
+    {
+      "id": "Hotel_A15010000H_032039",
+      "name": "三町目民宿",
+      "city": "台東縣",
+      "district": "臺東市",
+      "category": "accommodation",
+      "tags": [
+        "accommodation"
+      ],
+      "description": "位於台東縣的民宿，委託小天使民宿統一管理。",
+      "address": "成功里廣東路253號",
+      "latitude": null,
+      "longitude": null,
+      "family_suitability": null,
+      "indoor_outdoor": null,
+      "source": "交通部觀光署",
+      "source_url": "https://media.taiwan.net.tw/",
+      "last_updated": "2025/3/1 下午 12:59:32"
+    },
+    {
+      "id": "Hotel_A15010000H_032077",
+      "name": "飛行船民宿",
+      "city": "台東縣",
+      "district": "臺東市",
+      "category": "accommodation",
+      "tags": [
+        "accommodation"
+      ],
+      "description": "位於台東縣的民宿",
+      "address": "新站路28號",
+      "latitude": null,
+      "longitude": null,
+      "family_suitability": null,
+      "indoor_outdoor": null,
+      "source": "交通部觀光署",
+      "source_url": "https://media.taiwan.net.tw/",
+      "last_updated": "2026/8/25 下午 05:40:48"
+    },
+    {
+      "id": "Hotel_A15010000H_032093",
+      "name": "童心未泯民宿",
+      "city": "台東縣",
+      "district": "臺東市",
+      "category": "accommodation",
+      "tags": [
+        "accommodation"
+      ],
+      "description": "位於台東縣的民宿",
+      "address": "吉泰路599巷12號",
+      "latitude": null,
+      "longitude": null,
+      "family_suitability": null,
+      "indoor_outdoor": null,
+      "source": "交通部觀光署",
+      "source_url": "https://media.taiwan.net.tw/",
+      "last_updated": "2026/8/25 下午 05:46:15"
+    },
+    {
+      "id": "Hotel_A15010000H_032209",
+      "name": "Sherry小棧民宿",
+      "city": "台東縣",
+      "district": "臺東市",
+      "category": "accommodation",
+      "tags": [
+        "accommodation"
+      ],
+      "description": "位於台東縣的民宿",
+      "address": "樂利路57巷16號",
+      "latitude": null,
+      "longitude": null,
+      "family_suitability": null,
+      "indoor_outdoor": null,
+      "source": "交通部觀光署",
+      "source_url": "https://media.taiwan.net.tw/",
+      "last_updated": "2026/8/26 下午 05:34:35"
+    },
+    {
+      "id": "Hotel_A15010000H_032254",
+      "name": "小路公寓民宿",
+      "city": "台東縣",
+      "district": "臺東市",
+      "category": "accommodation",
+      "tags": [
+        "accommodation"
+      ],
+      "description": "位於台東縣的民宿",
+      "address": "仁昌街138巷30號",
+      "latitude": null,
+      "longitude": null,
+      "family_suitability": null,
+      "indoor_outdoor": null,
+      "source": "交通部觀光署",
+      "source_url": "https://media.taiwan.net.tw/",
+      "last_updated": "2025/9/2 下午 03:51:03"
+    },
+    {
+      "id": "Hotel_A15010000H_032413",
+      "name": "綠舍睡到民宿",
+      "city": "台東縣",
+      "district": "臺東市",
+      "category": "accommodation",
+      "tags": [
+        "accommodation"
+      ],
+      "description": "位於台台東豐富的風景與文化，是最原始、自然的風貌，簡單又引人嚮往，綠舍睡到民宿坐落於市中心，漫步即可體驗到最在地的人事物，遇到豁然的風景、歡欣鼓舞的心情，交織出的每一個悸動時刻，踏踏實實留存在您的記憶之中。綠舍睡到知曉旅行休息的重要，我們將喧囂留在外頭，充滿台東風情的舒適空間帶給您如同在家的享受，讓您沉浸在台東的寧靜裡放鬆休息，期待明天冒險來臨。綠舍睡到民宿位在台東縣的台東市，靠近東海運動公園和台東縣體育場，提供免費私人停車位。 所有房型附空調，均設有私人衛浴、平面電視、設備齊全的廚房和陽台。 且提供露台供住客使用。距離 Taitung Night Market 2.7 公里距離武安宮 2.1 公里。最近的機場是台東機場，距離綠舍睡到民宿 3 公里。東縣的民宿",
+      "address": "漢陽南路28巷62號",
+      "latitude": null,
+      "longitude": null,
+      "family_suitability": null,
+      "indoor_outdoor": null,
+      "source": "交通部觀光署",
+      "source_url": "https://media.taiwan.net.tw/",
+      "last_updated": "2026/2/11 下午 02:10:09"
+    },
+    {
+      "id": "Hotel_A15010000H_032414",
+      "name": "擁抱後山民宿",
+      "city": "台東縣",
+      "district": "臺東市",
+      "category": "accommodation",
+      "tags": [
+        "accommodation"
+      ],
+      "description": "台東豐富的風景與文化，是最原始、自然的風貌，簡單又引人嚮往，綠舍睡到民宿坐落於市中心，漫步即可體驗到最在地的人事物，遇到豁然的風景、歡欣鼓舞的心情，交織出的每一個悸動時刻，踏踏實實留存在您的記憶之中。綠舍睡到知曉旅行休息的重要，我們將喧囂留在外頭，充滿台東風情的舒適空間帶給您如同在家的享受，讓您沉浸在台東的寧靜裡放鬆休息，期待明天冒險來臨。台東豐富的風景與文化，是最原始、自然的風貌，簡單又引人嚮往，綠舍睡到民宿坐落於市中心，漫步即可體驗到最在地的人事物，遇到豁然的風景、歡欣鼓舞的心情，交織出的每一個悸動時刻，踏踏實實留存在您的記憶之中。綠舍睡到知曉旅行休息的重要，我們將喧囂留在外頭，充滿台東風情的舒適空間帶給您如同在家的享受，讓您沉浸在台東的寧靜裡放鬆休息，期待明天冒險來臨。綠舍睡到民宿位在台東縣的台東市，市區星巴克正後方及東海運動公園，提供免費私人停車位。 所有房型附空調，均設有私人衛浴、平面電視、設備齊全的廚房和陽台。 且提供露台供住客使用。火車站距離綠舍睡到民宿 6 公里。機場距離綠舍睡到民宿 3 公里。鐵花村距離綠舍睡到民宿 2 公里。觀光夜市距離綠舍睡到民宿 2 公里。",
+      "address": "漢陽南路28巷60號",
+      "latitude": null,
+      "longitude": null,
+      "family_suitability": null,
+      "indoor_outdoor": null,
+      "source": "交通部觀光署",
+      "source_url": "https://media.taiwan.net.tw/",
+      "last_updated": "2026/2/13 下午 04:11:44"
+    },
+    {
+      "id": "Hotel_A15010000H_032422",
+      "name": "芙蘿拉萃旅民宿",
+      "city": "台東縣",
+      "district": "臺東市",
+      "category": "accommodation",
+      "tags": [
+        "accommodation"
+      ],
+      "description": "位於台東縣的民宿「台東民宿-芙蘿拉萃旅」位於台東火車站附近，走路約7分鐘，前面有自用停車位可停車，大廳有分沙發休息區跟餐廳用餐交誼廳，客房提供舒適的環境休息，讓旅客放鬆有充足的睡眠，繼續下一個美好的旅程。",
+      "address": "國泰街58號",
+      "latitude": null,
+      "longitude": null,
+      "family_suitability": null,
+      "indoor_outdoor": null,
+      "source": "交通部觀光署",
+      "source_url": "https://media.taiwan.net.tw/",
+      "last_updated": "2026/2/11 下午 02:21:45"
+    },
+    {
+      "id": "Hotel_A15010000H_032482",
+      "name": "靜巷19號民宿",
+      "city": "台東縣",
+      "district": "臺東市",
+      "category": "accommodation",
+      "tags": [
+        "accommodation"
+      ],
+      "description": "位於台東縣的民宿",
+      "address": "正氣北路166巷19號",
+      "latitude": null,
+      "longitude": null,
+      "family_suitability": null,
+      "indoor_outdoor": null,
+      "source": "交通部觀光署",
+      "source_url": "https://media.taiwan.net.tw/",
+      "last_updated": "2026/8/22 下午 10:02:16"
+    },
+    {
+      "id": "Hotel_A15010000H_032531",
+      "name": "春秧民宿",
+      "city": "台東縣",
+      "district": "臺東市",
+      "category": "accommodation",
+      "tags": [
+        "accommodation"
+      ],
+      "description": "位於台東縣的民宿",
+      "address": "新站路49號",
+      "latitude": null,
+      "longitude": null,
+      "family_suitability": null,
+      "indoor_outdoor": null,
+      "source": "交通部觀光署",
+      "source_url": "https://media.taiwan.net.tw/",
+      "last_updated": "2026/2/13 上午 08:47:41"
+    },
+    {
+      "id": "Hotel_A15010000H_032549",
+      "name": "愛海居民宿",
+      "city": "台東縣",
+      "district": "臺東市",
+      "category": "accommodation",
+      "tags": [
+        "accommodation"
+      ],
+      "description": "位於台東縣的民宿",
+      "address": "臨海路三段51巷16號",
+      "latitude": null,
+      "longitude": null,
+      "family_suitability": null,
+      "indoor_outdoor": null,
+      "source": "交通部觀光署",
+      "source_url": "https://media.taiwan.net.tw/",
+      "last_updated": "2026/2/13 上午 08:51:32"
+    },
+    {
+      "id": "Hotel_A15010000H_032606",
+      "name": "小院子民宿",
+      "city": "台東縣",
+      "district": "臺東市",
+      "category": "accommodation",
+      "tags": [
+        "accommodation"
+      ],
+      "description": "位於台東縣的民宿",
+      "address": "強國街382巷38號",
+      "latitude": null,
+      "longitude": null,
+      "family_suitability": null,
+      "indoor_outdoor": null,
+      "source": "交通部觀光署",
+      "source_url": "https://media.taiwan.net.tw/",
+      "last_updated": "2026/2/13 上午 09:48:49"
+    },
+    {
+      "id": "Hotel_A15010000H_032675",
+      "name": "囍沐民宿",
+      "city": "台東縣",
+      "district": "臺東市",
+      "category": "accommodation",
+      "tags": [
+        "accommodation"
+      ],
+      "description": "位於台東縣的民宿",
+      "address": "卑南里更生北路202巷41號",
+      "latitude": null,
+      "longitude": null,
+      "family_suitability": null,
+      "indoor_outdoor": null,
+      "source": "交通部觀光署",
+      "source_url": "https://media.taiwan.net.tw/",
+      "last_updated": "2026/2/13 上午 11:41:54"
+    },
+    {
+      "id": "Hotel_A15010000H_032733",
+      "name": "馬舞辣民宿",
+      "city": "台東縣",
+      "district": "臺東市",
+      "category": "accommodation",
+      "tags": [
+        "accommodation"
+      ],
+      "description": "位於台東縣的民宿",
+      "address": "北平街36號",
+      "latitude": null,
+      "longitude": null,
+      "family_suitability": null,
+      "indoor_outdoor": null,
+      "source": "交通部觀光署",
+      "source_url": "https://media.taiwan.net.tw/",
+      "last_updated": "2026/8/27 上午 11:21:41"
+    },
+    {
+      "id": "Hotel_A15010000H_032737",
+      "name": "好室民宿",
+      "city": "台東縣",
+      "district": "臺東市",
+      "category": "accommodation",
+      "tags": [
+        "accommodation"
+      ],
+      "description": "位於台東縣的民宿",
+      "address": "中正路251巷9號",
+      "latitude": null,
+      "longitude": null,
+      "family_suitability": null,
+      "indoor_outdoor": null,
+      "source": "交通部觀光署",
+      "source_url": "https://media.taiwan.net.tw/",
+      "last_updated": "2026/2/13 下午 03:30:36"
+    },
+    {
+      "id": "Hotel_A15010000H_032789",
+      "name": "鐵支路民宿",
+      "city": "台東縣",
+      "district": "臺東市",
+      "category": "accommodation",
+      "tags": [
+        "accommodation"
+      ],
+      "description": "位於台東縣火車站附近有全家及7-11便利商店的鐵支路民宿，是一個鐵路退休員工的民宿夢，民宿布置有著鐵道及文物風格及台東風景畫作的明亮舒適的空間。不僅有著民宿的故事及溫度，更有著旅店的自在與服務。~~~歡迎您來~~~橘黃外觀顯眼而醒目，一樓公共空間以鐵路意象的裝置藝術為主軸；客房則以顏色區分，省去過多繁複裝飾，呈現典雅簡約的風格，讓疲憊的旅人能獲得一夜好眠。鄰近景點：史前文化公園、利吉水利公園、利吉惡地、美術館、親子蛋糕公園、森林海濱公園、四格山。",
+      "address": "岩灣里9鄰興盛路332號",
+      "latitude": null,
+      "longitude": null,
+      "family_suitability": null,
+      "indoor_outdoor": null,
+      "source": "交通部觀光署",
+      "source_url": "https://media.taiwan.net.tw/",
+      "last_updated": "2026/2/24 上午 11:51:23"
+    },
+    {
+      "id": "Hotel_A15010000H_032804",
+      "name": "隨思還園民宿",
+      "city": "台東縣",
+      "district": "臺東市",
+      "category": "accommodation",
+      "tags": [
+        "accommodation"
+      ],
+      "description": "位於台東縣的民宿",
+      "address": "國泰街2-1號",
+      "latitude": null,
+      "longitude": null,
+      "family_suitability": null,
+      "indoor_outdoor": null,
+      "source": "交通部觀光署",
+      "source_url": "https://media.taiwan.net.tw/",
+      "last_updated": "2026/2/24 上午 11:54:28"
+    },
+    {
+      "id": "Hotel_A15010000H_032818",
+      "name": "咻咻宿民宿",
+      "city": "台東縣",
+      "district": "臺東市",
+      "category": "accommodation",
+      "tags": [
+        "accommodation"
+      ],
+      "description": "位於台東縣的民宿",
+      "address": "興安路一段209號",
+      "latitude": null,
+      "longitude": null,
+      "family_suitability": null,
+      "indoor_outdoor": null,
+      "source": "交通部觀光署",
+      "source_url": "https://media.taiwan.net.tw/",
+      "last_updated": "2026/2/24 下午 03:04:55"
+    },
+    {
+      "id": "Hotel_A15010000H_033038",
+      "name": "維拉民宿",
+      "city": "台東縣",
+      "district": "臺東市",
+      "category": "accommodation",
+      "tags": [
+        "accommodation"
+      ],
+      "description": "位於台東縣的民宿",
+      "address": "仁昌街179號",
+      "latitude": null,
+      "longitude": null,
+      "family_suitability": null,
+      "indoor_outdoor": null,
+      "source": "交通部觀光署",
+      "source_url": "https://media.taiwan.net.tw/",
+      "last_updated": "2026/9/1 下午 03:07:01"
+    },
+    {
+      "id": "Hotel_A15010000H_033061",
+      "name": "陽光輕旅民宿",
+      "city": "台東縣",
+      "district": "臺東市",
+      "category": "accommodation",
+      "tags": [
+        "accommodation"
+      ],
+      "description": "位於台東縣的民宿",
+      "address": "新站路38號",
+      "latitude": null,
+      "longitude": null,
+      "family_suitability": null,
+      "indoor_outdoor": null,
+      "source": "交通部觀光署",
+      "source_url": "https://media.taiwan.net.tw/",
+      "last_updated": "2026/8/27 下午 12:48:09"
+    },
+    {
+      "id": "Hotel_A15010000H_033112",
+      "name": "孟林民宿",
+      "city": "台東縣",
+      "district": "臺東市",
+      "category": "accommodation",
+      "tags": [
+        "accommodation"
+      ],
+      "description": "位於台東縣的民宿",
+      "address": "仁昌街120巷19號",
+      "latitude": null,
+      "longitude": null,
+      "family_suitability": null,
+      "indoor_outdoor": null,
+      "source": "交通部觀光署",
+      "source_url": "https://media.taiwan.net.tw/",
+      "last_updated": "2026/7/21 下午 05:21:27"
+    },
+    {
+      "id": "Hotel_A15010000H_033232",
+      "name": "壹號民宿",
+      "city": "台東縣",
+      "district": "臺東市",
+      "category": "accommodation",
+      "tags": [
+        "accommodation"
+      ],
+      "description": "位於台東縣的民宿",
+      "address": "民航路771號",
+      "latitude": null,
+      "longitude": null,
+      "family_suitability": null,
+      "indoor_outdoor": null,
+      "source": "交通部觀光署",
+      "source_url": "https://media.taiwan.net.tw/",
+      "last_updated": "2025/3/21 下午 06:35:30"
+    },
+    {
+      "id": "Hotel_A15010000H_033265",
+      "name": "秝之屋民宿",
+      "city": "台東縣",
+      "district": "臺東市",
+      "category": "accommodation",
+      "tags": [
+        "accommodation"
+      ],
+      "description": "位於台東縣的民宿",
+      "address": "山西路一段232巷7號",
+      "latitude": null,
+      "longitude": null,
+      "family_suitability": null,
+      "indoor_outdoor": null,
+      "source": "交通部觀光署",
+      "source_url": "https://media.taiwan.net.tw/",
+      "last_updated": "2025/4/19 下午 04:28:25"
+    },
+    {
+      "id": "Hotel_A15010000H_033277",
+      "name": "魔法精靈民宿",
+      "city": "台東縣",
+      "district": "臺東市",
+      "category": "accommodation",
+      "tags": [
+        "accommodation"
+      ],
+      "description": "我們為來到台東旅遊的朋友，提供一個城堡式的家，客廳有如宮廷般的華麗，每個房間就像魔法般的神奇，從客廳到房間每個角落都是民宿主人精心設計佈置，讓旅行的朋友有一個開心舒適的住宿體驗，且民宿到火車站僅400公尺，走路只需10分鐘。(台東縣合法民宿：1949號)",
+      "address": "新站路68號",
+      "latitude": null,
+      "longitude": null,
+      "family_suitability": null,
+      "indoor_outdoor": null,
+      "source": "交通部觀光署",
+      "source_url": "https://media.taiwan.net.tw/",
+      "last_updated": "2025/4/19 下午 04:22:40"
+    },
+    {
+      "id": "Hotel_A15010000H_033346",
+      "name": "新站23號民宿",
+      "city": "台東縣",
+      "district": "臺東市",
+      "category": "accommodation",
+      "tags": [
+        "accommodation"
+      ],
+      "description": "位於台東縣的民宿",
+      "address": "新站路23號",
+      "latitude": null,
+      "longitude": null,
+      "family_suitability": null,
+      "indoor_outdoor": null,
+      "source": "交通部觀光署",
+      "source_url": "https://media.taiwan.net.tw/",
+      "last_updated": "2025/9/2 下午 04:25:58"
+    },
+    {
+      "id": "Hotel_A15010000H_033376",
+      "name": "拉芬朵兒6號民宿",
+      "city": "台東縣",
+      "district": "臺東市",
+      "category": "accommodation",
+      "tags": [
+        "accommodation"
+      ],
+      "description": "位於台東縣的民宿",
+      "address": "中興路四段817巷27弄6號",
+      "latitude": null,
+      "longitude": null,
+      "family_suitability": null,
+      "indoor_outdoor": null,
+      "source": "交通部觀光署",
+      "source_url": "https://media.taiwan.net.tw/",
+      "last_updated": "2026/8/27 下午 01:41:48"
+    },
+    {
+      "id": "Hotel_A15010000H_033381",
+      "name": "文旅行莊園館民宿",
+      "city": "台東縣",
+      "district": "臺東市",
+      "category": "accommodation",
+      "tags": [
+        "accommodation"
+      ],
+      "description": "位於台東縣的民宿",
+      "address": "大勇路30巷51號",
+      "latitude": null,
+      "longitude": null,
+      "family_suitability": null,
+      "indoor_outdoor": null,
+      "source": "交通部觀光署",
+      "source_url": "https://media.taiwan.net.tw/",
+      "last_updated": "2025/11/17 下午 06:49:01"
+    },
+    {
+      "id": "Hotel_A15010000H_033542",
+      "name": "放風inn民宿",
+      "city": "台東縣",
+      "district": "臺東市",
+      "category": "accommodation",
+      "tags": [
+        "accommodation"
+      ],
+      "description": "位於台東縣的民宿",
+      "address": "成都南路1號",
+      "latitude": null,
+      "longitude": null,
+      "family_suitability": null,
+      "indoor_outdoor": null,
+      "source": "交通部觀光署",
+      "source_url": "https://media.taiwan.net.tw/",
+      "last_updated": "2026/8/4 下午 04:47:01"
+    },
+    {
+      "id": "Hotel_A15010000H_033547",
+      "name": "蜻蜓旅攝民宿",
+      "city": "台東縣",
+      "district": "臺東市",
+      "category": "accommodation",
+      "tags": [
+        "accommodation"
+      ],
+      "description": "位於台東縣的民宿",
+      "address": "中華路二段367號",
+      "latitude": null,
+      "longitude": null,
+      "family_suitability": null,
+      "indoor_outdoor": null,
+      "source": "交通部觀光署",
+      "source_url": "https://media.taiwan.net.tw/",
+      "last_updated": "2025/3/10 下午 04:04:41"
+    },
+    {
+      "id": "Hotel_A15010000H_033548",
+      "name": "藍海灣海景民宿",
+      "city": "台東縣",
+      "district": "臺東市",
+      "category": "accommodation",
+      "tags": [
+        "accommodation"
+      ],
+      "description": "位於台東縣的民宿",
+      "address": "富岡里9鄰吉林路二段580號",
+      "latitude": null,
+      "longitude": null,
+      "family_suitability": null,
+      "indoor_outdoor": null,
+      "source": "交通部觀光署",
+      "source_url": "https://media.taiwan.net.tw/",
+      "last_updated": "2025/6/4 下午 01:56:37"
+    },
+    {
+      "id": "Hotel_A15010000H_034301",
+      "name": "台東藍民宿",
+      "city": "台東縣",
+      "district": "臺東市",
+      "category": "accommodation",
+      "tags": [
+        "accommodation"
+      ],
+      "description": "位於台東縣的民宿",
+      "address": "岩灣里14鄰新站路63號",
+      "latitude": null,
+      "longitude": null,
+      "family_suitability": null,
+      "indoor_outdoor": null,
+      "source": "交通部觀光署",
+      "source_url": "https://media.taiwan.net.tw/",
+      "last_updated": "2025/7/24 上午 10:28:35"
+    },
+    {
+      "id": "Hotel_A15010000H_035077",
+      "name": "望宅民宿",
+      "city": "台東縣",
+      "district": "臺東市",
+      "category": "accommodation",
+      "tags": [
+        "accommodation"
+      ],
+      "description": "位於台東縣的民宿",
+      "address": "卑南里20鄰志航二街180號",
+      "latitude": null,
+      "longitude": null,
+      "family_suitability": null,
+      "indoor_outdoor": null,
+      "source": "交通部觀光署",
+      "source_url": "https://media.taiwan.net.tw/",
+      "last_updated": "2025/3/17 上午 07:41:09"
+    },
+    {
+      "id": "Hotel_A15010000H_035109",
+      "name": "米鹿谷民宿",
+      "city": "台東縣",
+      "district": "臺東市",
+      "category": "accommodation",
+      "tags": [
+        "accommodation"
+      ],
+      "description": "位於台東縣的民宿",
+      "address": "南榮里12鄰志航一街70號",
+      "latitude": null,
+      "longitude": null,
+      "family_suitability": null,
+      "indoor_outdoor": null,
+      "source": "交通部觀光署",
+      "source_url": "https://media.taiwan.net.tw/",
+      "last_updated": "2026/2/4 下午 05:59:42"
+    },
+    {
+      "id": "Hotel_A15010000H_035110",
+      "name": "日日民宿",
+      "city": "台東縣",
+      "district": "臺東市",
+      "category": "accommodation",
+      "tags": [
+        "accommodation"
+      ],
+      "description": "位於台東縣的民宿",
+      "address": "南榮里12鄰志航一街72號",
+      "latitude": null,
+      "longitude": null,
+      "family_suitability": null,
+      "indoor_outdoor": null,
+      "source": "交通部觀光署",
+      "source_url": "https://media.taiwan.net.tw/",
+      "last_updated": "2025/9/4 下午 04:56:34"
+    },
+    {
+      "id": "Hotel_A15010000H_035704",
+      "name": "別有洞天-新生館民宿",
+      "city": "台東縣",
+      "district": "臺東市",
+      "category": "accommodation",
+      "tags": [
+        "accommodation"
+      ],
+      "description": "別有洞天電梯民宿新生館是旅客停留臺東市的絕佳住宿選擇,地點在市中心,附近500公尺處有7-11和全家便利商店,若要使用廚房,全聯也在附近喔,非常方便。免費無線網路可供旅客使用,別有洞天電梯民宿新生館客房提供空调設施,衛浴乾濕分離和陽台,也可讓你們免費洗衣喔。開車抵连的旅客,可提供免費停車。到臺東市旅遊時,如果對參觀著名地標有興趣,別有洞天電梯民宿新生館就在台東縣忠烈祠(0.8km)和武安宮(1.0km)附近。如果时間允許,台東鐵道藝術村、鲤魚山公園和公東高工教堂是步行即可到達的幾個人氣景點。盡情享受您在台東市停留的時光!",
+      "address": "新生路588巷13號",
+      "latitude": null,
+      "longitude": null,
+      "family_suitability": null,
+      "indoor_outdoor": null,
+      "source": "交通部觀光署",
+      "source_url": "https://media.taiwan.net.tw/",
+      "last_updated": "2025/8/5 上午 07:56:12"
+    },
+    {
+      "id": "Hotel_A15010000H_036546",
+      "name": "港口民宿",
+      "city": "台東縣",
+      "district": "臺東市",
+      "category": "accommodation",
+      "tags": [
+        "accommodation"
+      ],
+      "description": "位於台東縣的民宿",
+      "address": "富岡里松江路一段114巷53號",
+      "latitude": null,
+      "longitude": null,
+      "family_suitability": null,
+      "indoor_outdoor": null,
+      "source": "交通部觀光署",
+      "source_url": "https://media.taiwan.net.tw/",
+      "last_updated": "2025/9/3 上午 08:41:57"
+    },
+    {
+      "id": "Hotel_A15010000H_038400",
+      "name": "普悠瑪民宿",
+      "city": "台東縣",
+      "district": "臺東市",
+      "category": "accommodation",
+      "tags": [
+        "accommodation"
+      ],
+      "description": "普悠瑪（PUYUMA）源自台東卑南族對自身的稱呼，意涵為「團結、聚集」。我們以「普悠瑪」為名，希望在這片土地上，邀請來自各地的旅人相聚於此，一起放慢腳步，感受台東最真實、最純粹的美。在這裡，沒有匆忙的節奏，只有自然的風、溫暖的人情，以及貼近土地的生活方式。透過在地文化的體驗，讓旅人重新找回單純的幸福，體會簡單卻深刻的慢活人生。普悠瑪不只是一個停留的空間，更是一個讓人放鬆、交流、連結彼此的所在。期待每一位到訪的朋友，都能在這裡留下屬於自己的台東回憶。? 地址：台東縣台東市岩灣里15鄰樂利路61之1號",
+      "address": "岩灣里15鄰樂利路61之1號",
+      "latitude": null,
+      "longitude": null,
+      "family_suitability": null,
+      "indoor_outdoor": null,
+      "source": "交通部觀光署",
+      "source_url": "https://media.taiwan.net.tw/",
+      "last_updated": "2026/3/9 上午 11:06:02"
+    },
+    {
+      "id": "Hotel_A15010000H_039068",
+      "name": "東之宿民宿",
+      "city": "台東縣",
+      "district": "臺東市",
+      "category": "accommodation",
+      "tags": [
+        "accommodation"
+      ],
+      "description": "東之宿位於台東縣，提供一系列便利設施，讓您的住宿體驗更加舒適便捷。酒店設有公共區域免費Wi-Fi，讓您隨時保持網絡連接，輕鬆上網查找旅遊資訊。此外，所有客房也提供免費Wi-Fi，讓您在房間內享受快速的網絡連接。 為了方便客人，酒店還提供行李寄存服務，讓您在入住或退房後無需攜帶大件行李四處奔波，輕鬆自在地遊覽台東縣的美景。此外，酒店還設有自助洗衣房，讓您在旅途中輕鬆洗滌衣物，無需擔心衣物的清潔問題。東之宿將為您提供一個舒適便利的住宿環境，讓您在台東縣的旅程更加愉快。",
+      "address": "成功里1鄰鐵花路86巷19-2號",
+      "latitude": null,
+      "longitude": null,
+      "family_suitability": null,
+      "indoor_outdoor": null,
+      "source": "交通部觀光署",
+      "source_url": "https://media.taiwan.net.tw/",
+      "last_updated": "2026/5/11 上午 11:34:30"
+    },
+    {
+      "id": "Event_376540000A_006256",
+      "name": "2026 VW LAVanLife 玩賽樂園",
+      "city": "台東縣",
+      "district": "臺東市",
+      "category": "activity",
+      "tags": [
+        "activity"
+      ],
+      "description": "有一種鐵人賽叫做不怕你玩很大 ~ 不關門挺你完賽",
+      "address": "台東縣森林公園、活水湖",
+      "latitude": null,
+      "longitude": null,
+      "family_suitability": null,
+      "indoor_outdoor": null,
+      "source": "臺東縣政府交通及觀光發展處",
+      "source_url": "https://media.taiwan.net.tw/",
+      "last_updated": "2026/6/10 上午 10:35:22"
+    },
+    {
+      "id": "Event_A15010000H_081949",
+      "name": "2026台東博覽會",
+      "city": "台東縣",
+      "district": "臺東市",
+      "category": "activity",
+      "tags": [
+        "activity"
+      ],
+      "description": "2026台東博覽會於7月3日至8月20日正式展開，串聯全縣9大展區、23檔官方主題展覽、22件民間參與計畫、14個在地活動品牌及超過200場限定活動。本次展會以全台東為展場，從主場館A1「活的學校」出發，串聯舊站特區及全縣9大展區，並以慢經濟、永續發展、台東藍及南島文化四大策展核心理念為主軸，整合文化、藝術、教育、產業、生活、觀光、永續及地方創生等多元內容，呈現縣府與民間攜手推動慢經濟的成果，並描繪臺東下一個十年的發展藍圖。",
+      "address": "台東縣立體育館",
+      "latitude": null,
+      "longitude": null,
+      "family_suitability": null,
+      "indoor_outdoor": null,
+      "source": "交通部觀光署",
+      "source_url": "https://media.taiwan.net.tw/",
+      "last_updated": "2026/9/11 上午 02:00:04"
+    }
+  ]
+}

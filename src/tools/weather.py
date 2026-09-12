@@ -112,7 +112,7 @@ def geocode_city(city: str) -> Dict[str, Any]:
     params = {
         "name": search_name,
         "count": 1,
-        "language": "en",
+        "language": "zh",
         "format": "json"
     }
 
