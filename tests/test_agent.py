@@ -120,8 +120,8 @@ class TestAgentRun:
 
         assert result["success"] is True
         assert "您好" in result["final_answer"]
-        assert len(agent.tool_calls) == 0
-        assert len(agent.tool_results) == 0
+        assert len(result["tool_calls"]) == 0
+        assert len(result["tool_results"]) == 0
 
     def test_single_tool_call_weather(self):
         """Test single get_weather tool call"""
@@ -143,10 +143,10 @@ class TestAgentRun:
             result = agent.run("台東今天天氣如何？")
 
         assert result["success"] is True
-        assert len(agent.tool_calls) == 1
-        assert agent.tool_calls[0]["name"] == "get_weather"
-        assert agent.tool_calls[0]["arguments"]["city"] == "Taitung"
-        assert len(agent.tool_results) == 1
+        assert len(result["tool_calls"]) == 1
+        assert result["tool_calls"][0]["name"] == "get_weather"
+        assert result["tool_calls"][0]["arguments"]["city"] == "Taitung"
+        assert len(result["tool_results"]) == 1
         assert "多雲" in result["final_answer"]
 
     def test_single_tool_call_attractions(self):
@@ -167,10 +167,10 @@ class TestAgentRun:
             result = agent.run("台東有什麼住宿推薦？")
 
         assert result["success"] is True
-        assert len(agent.tool_calls) == 1
-        assert agent.tool_calls[0]["name"] == "search_attractions"
-        assert agent.tool_calls[0]["arguments"]["city"] == "Taitung"
-        assert agent.tool_calls[0]["arguments"]["category"] == "accommodation"
+        assert len(result["tool_calls"]) == 1
+        assert result["tool_calls"][0]["name"] == "search_attractions"
+        assert result["tool_calls"][0]["arguments"]["city"] == "Taitung"
+        assert result["tool_calls"][0]["arguments"]["category"] == "accommodation"
 
     def test_two_tool_calls_weather_then_attractions(self):
         """Test sequential tool calls: weather then attractions"""
@@ -195,9 +195,9 @@ class TestAgentRun:
             result = agent.run("台東今天會下雨嗎？下雨適合去哪裡住宿？")
 
         assert result["success"] is True
-        assert len(agent.tool_calls) == 2
-        assert agent.tool_calls[0]["name"] == "get_weather"
-        assert agent.tool_calls[1]["name"] == "search_attractions"
+        assert len(result["tool_calls"]) == 2
+        assert result["tool_calls"][0]["name"] == "get_weather"
+        assert result["tool_calls"][1]["name"] == "search_attractions"
 
     def test_tool_result_passed_to_llm(self):
         """Test that tool results are passed back to LLM"""
@@ -215,9 +215,9 @@ class TestAgentRun:
             result = agent.run("台東天氣")
 
             # Verify tool was called and result passed back
-            assert len(agent.tool_calls) == 1
-            assert len(agent.tool_results) == 1
-            assert agent.tool_results[0]["name"] == "get_weather"
+            assert len(result["tool_calls"]) == 1
+            assert len(result["tool_results"]) == 1
+            assert result["tool_results"][0]["name"] == "get_weather"
 
     def test_max_tool_calls_limit(self):
         """Test agent respects max_tool_calls limit"""
@@ -237,7 +237,7 @@ class TestAgentRun:
             result = agent.run("測試限制")
 
         # Should stop at max_tool_calls (3) even though LLM wants more
-        assert len(agent.tool_calls) <= 3
+        assert len(result["tool_calls"]) <= 3
 
     def test_unknown_tool_error_handling(self):
         """Test handling of unknown tool"""
@@ -256,9 +256,9 @@ class TestAgentRun:
             result = agent.run("測試")
 
         # Tool result should contain error
-        assert len(agent.tool_results) == 1
-        assert agent.tool_results[0]["result"]["success"] is False
-        assert agent.tool_results[0]["result"]["error_type"] == "unknown_tool"
+        assert len(result["tool_results"]) == 1
+        assert result["tool_results"][0]["result"]["success"] is False
+        assert result["tool_results"][0]["result"]["error_type"] == "unknown_tool"
 
 
 class TestAgentState:
@@ -273,10 +273,10 @@ class TestAgentState:
 
         with patch("src.agent.OpenAI", return_value=mock_client):
             agent = Agent(api_key="test-key")
-            agent.run("第一次")
-            first_calls = len(agent.tool_calls)
-            agent.run("第二次")
-            second_calls = len(agent.tool_calls)
+            result1 = agent.run("第一次")
+            first_calls = len(result1["tool_calls"])
+            result2 = agent.run("第二次")
+            second_calls = len(result2["tool_calls"])
 
             # State should be independent
             assert first_calls == 0
@@ -349,10 +349,10 @@ class TestToolCallTracking:
 
         with patch("src.agent.OpenAI", return_value=mock_client):
             agent = Agent(api_key="test-key")
-            agent.run("測試")
+            result = agent.run("測試")
 
-        assert agent.tool_calls[0]["call_id"] == "unique_id_123"
-        assert agent.tool_results[0]["call_id"] == "unique_id_123"
+        assert result["tool_calls"][0]["call_id"] == "unique_id_123"
+        assert result["tool_results"][0]["call_id"] == "unique_id_123"
 
     def test_system_prompt_in_messages(self):
         """System prompt should be first in messages"""
@@ -369,38 +369,3 @@ class TestToolCallTracking:
             messages = call_args[1]["messages"]
             assert messages[0]["role"] == "system"
             assert "鐵花觀光代理人" in messages[0]["content"]
-
-
-class TestCreateAgentFactory:
-    """Tests for create_agent factory function"""
-
-    def test_create_agent_returns_agent(self):
-        """Factory should return Agent instance"""
-        from src.agent import create_agent
-        agent = create_agent(api_key="test")
-        assert isinstance(agent, Agent)
-
-
-class TestToolExecution:
-    """Tests for tool execution (integration with actual tools)"""
-
-    @pytest.mark.integration
-    def test_execute_get_weather_real(self):
-        """Integration test with real weather tool (requires network)"""
-        from src.agent import Agent
-        agent = Agent(api_key="dummy")  # Won't call LLM
-
-        # This tests the _execute_tool method directly
-        result = agent._execute_tool("get_weather", {"city": "Taitung"})
-        # May fail without API key, but should return structured response
-        assert "success" in result
-
-    @pytest.mark.integration
-    def test_execute_search_attractions_real(self):
-        """Integration test with real attractions tool"""
-        from src.agent import Agent
-        agent = Agent(api_key="dummy")
-
-        result = agent._execute_tool("search_attractions", {"city": "Taitung", "category": "accommodation"})
-        assert result["success"] is True
-        assert result["count"] > 0

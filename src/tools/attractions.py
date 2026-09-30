@@ -86,24 +86,32 @@ def _matches_city(attraction: Dict[str, Any], city: str) -> bool:
     """Check if attraction matches the given city.
 
     Handles both English (e.g., "Taitung") and Chinese (e.g., "台東") city names
-    by using a bidirectional mapping.
+    by using a bidirectional mapping. Also checks the district field to support
+    queries like "台東市" when the dataset stores county-level city names.
     """
     if not attraction.get("city"):
         return False
 
     search_city = _normalize_city(city)
     attraction_city = _normalize_city(attraction["city"])
+    attraction_district = _normalize_city(attraction.get("district", ""))
 
-    # Direct match (Chinese-to-Chinese or English-to-English)
+    # Check against city field
     if search_city == attraction_city:
         return True
     if search_city in attraction_city or attraction_city in search_city:
+        return True
+
+    # Check against district field (e.g., "台東市" matches district "臺東市")
+    if attraction_district and (search_city == attraction_district or search_city in attraction_district or attraction_district in search_city):
         return True
 
     # Map English city name to Chinese for comparison
     if search_city in REVERSE_CITY_MAP:
         chinese_name = REVERSE_CITY_MAP[search_city]
         if chinese_name in attraction_city or attraction_city in chinese_name:
+            return True
+        if attraction_district and (chinese_name in attraction_district or attraction_district in chinese_name):
             return True
 
     # Map Chinese city name to English for comparison (reverse lookup)

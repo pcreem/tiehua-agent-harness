@@ -1,10 +1,15 @@
-"""Agent with Function Calling for Tourism Tools"""
+"""Agent with Function Calling for Tourism Tools
+
+Uses centralized AgentState for all execution state management.
+"""
 
 import os
 import json
 from typing import List, Dict, Any, Optional
 from openai import OpenAI
 from dotenv import load_dotenv
+
+from src.state import AgentState, initialize_state
 
 
 load_dotenv()
@@ -69,7 +74,7 @@ SYSTEM_PROMPT = """你是鐵花觀光代理人，協助使用者規劃台東旅�
 
 
 class Agent:
-    """Tourism Agent with Function Calling"""
+    """Tourism Agent with Function Calling and Centralized State Management"""
 
     def __init__(
         self,
@@ -82,20 +87,9 @@ class Agent:
         if not self.api_key:
             raise ValueError("OPENROUTER_API_KEY not set")
 
-        self.client = OpenAI(api_key=self.api_key, base_url=base_url)
+        self.client = OpenAI(api_key=self.api_key, base_url=base_url, timeout=30.0)
         self.model = model
         self.max_tool_calls = max_tool_calls
-
-        # Conversation state
-        self.messages: List[Dict[str, Any]] = []
-        self.tool_calls: List[Dict[str, Any]] = []
-        self.tool_results: List[Dict[str, Any]] = []
-
-    def _reset_state(self):
-        """Reset conversation state for new query"""
-        self.messages = [{"role": "system", "content": SYSTEM_PROMPT}]
-        self.tool_calls = []
-        self.tool_results = []
 
     def _execute_tool(self, name: str, args: Dict[str, Any]) -> Dict[str, Any]:
         """Execute a tool by name with arguments"""
@@ -114,22 +108,26 @@ class Agent:
 
     def run(self, user_query: str) -> Dict[str, Any]:
         """Run agent with user query, return final answer and state"""
-        self._reset_state()
-        self.messages.append({"role": "user", "content": user_query})
+        # Initialize centralized state
+        state = initialize_state(user_query)
+        state.add_message("user", user_query)
 
         tool_call_count = 0
 
         while tool_call_count < self.max_tool_calls:
-            # Call LLM
+            # Call LLM with current messages from state
+            print(f"[DEBUG] Calling LLM (attempt {tool_call_count + 1})...", flush=True)
             try:
                 response = self.client.chat.completions.create(
                     model=self.model,
-                    messages=self.messages,
+                    messages=state.messages,
                     tools=TOOLS,
                     tool_choice="auto",
                     temperature=0.3,
                 )
+                print(f"[DEBUG] LLM responded", flush=True)
             except Exception as e:
+                print(f"[DEBUG] LLM API error: {e}", flush=True)
                 raise RuntimeError(f"LLM API 呼叫失敗: {e}")
 
             if not response.choices or not response.choices[0].message:
@@ -139,70 +137,69 @@ class Agent:
 
             # If no tool calls, we have final answer
             if not message.tool_calls:
-                self.messages.append({
-                    "role": "assistant",
-                    "content": message.content
-                })
+                final_content = message.content or ""
+                state.add_message("assistant", final_content)
+                state.set_answer(final_content)
                 break
 
             # Execute tool calls
-            self.messages.append({
-                "role": "assistant",
-                "content": message.content,
-                "tool_calls": [
-                    {
-                        "id": tc.id,
-                        "type": tc.type,
-                        "function": {
-                            "name": tc.function.name,
-                            "arguments": tc.function.arguments
-                        }
+            tool_calls_data = []
+            for tc in message.tool_calls:
+                tool_calls_data.append({
+                    "id": tc.id,
+                    "type": tc.type,
+                    "function": {
+                        "name": tc.function.name,
+                        "arguments": tc.function.arguments
                     }
-                    for tc in message.tool_calls
-                ]
-            })
+                })
+
+            state.add_message(
+                "assistant",
+                message.content or "",
+                tool_calls=tool_calls_data
+            )
 
             for tool_call in message.tool_calls:
                 name = tool_call.function.name
                 args = json.loads(tool_call.function.arguments)
+                print(f"[DEBUG] Executing tool: {name} with args: {args}", flush=True)
 
-                # Record tool call
-                self.tool_calls.append({
-                    "name": name,
-                    "arguments": args,
-                    "call_id": tool_call.id
-                })
+                # Record tool call in state
+                state.add_tool_call(name, args, tool_call.id)
 
                 # Execute tool
                 result = self._execute_tool(name, args)
+                print(f"[DEBUG] Tool result: {result.get('success')}", flush=True)
 
-                # Record tool result
-                self.tool_results.append({
-                    "name": name,
-                    "arguments": args,
-                    "result": result,
-                    "call_id": tool_call.id
-                })
+                # Record tool result in state
+                state.add_tool_result(name, args, result, tool_call.id)
 
-                # Add tool result to messages
-                self.messages.append({
-                    "role": "tool",
-                    "tool_call_id": tool_call.id,
-                    "content": json.dumps(result, ensure_ascii=False)
-                })
+                # Add tool result to messages for LLM
+                state.add_message(
+                    "tool",
+                    json.dumps(result, ensure_ascii=False),
+                    tool_call_id=tool_call.id
+                )
 
                 tool_call_count += 1
 
-        # Get final answer
-        final_answer = self.messages[-1].get("content", "") if self.messages else ""
+            state.increment_retry()
+
+        # Get final answer from state
+        final_answer = state.answer or ""
 
         return {
-            "query": user_query,
+            "query": state.query,
             "final_answer": final_answer,
-            "messages": self.messages,
-            "tool_calls": self.tool_calls,
-            "tool_results": self.tool_results,
-            "success": True
+            "messages": state.messages,
+            "tool_calls": state.tool_calls,
+            "tool_results": state.tool_results,
+            "retry_count": state.retry_count,
+            "feedback": state.feedback,
+            "evaluation": state.evaluation,
+            "success": True,
+            "state": state.to_dict()
         }
 
 
