@@ -9,6 +9,7 @@ from .types import (
 )
 from .deterministic import DeterministicEvaluator, evaluate
 from .registry import EvaluatorRegistry, get_registry, register_evaluator, run_evaluation
+from .llm_judge import LLMJudge, LLMJudgeEvaluator, create_llm_judge_evaluator, JudgeResult
 
 __all__ = [
     "EvaluationResult",
@@ -22,4 +23,8 @@ __all__ = [
     "register_evaluator",
     "run_evaluation",
     "evaluate",
+    "LLMJudge",
+    "LLMJudgeEvaluator",
+    "create_llm_judge_evaluator",
+    "JudgeResult",
 ]
