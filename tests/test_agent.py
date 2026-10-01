@@ -27,8 +27,12 @@ class MockChoice:
 
 
 class MockChatCompletion:
-    def __init__(self, choices):
+    def __init__(self, choices, usage=None):
         self.choices = choices
+        self.usage = usage or MagicMock()
+        self.usage.prompt_tokens = getattr(usage, 'prompt_tokens', 0) if usage else 0
+        self.usage.completion_tokens = getattr(usage, 'completion_tokens', 0) if usage else 0
+        self.usage.total_tokens = getattr(usage, 'total_tokens', 0) if usage else 0
 
 
 def create_mock_client(responses):
@@ -36,7 +40,18 @@ def create_mock_client(responses):
     mock_client = MagicMock()
     mock_chat = MagicMock()
     mock_completions = MagicMock()
-    mock_completions.create.side_effect = responses
+    
+    call_count = [0]
+    
+    def side_effect(*args, **kwargs):
+        call_count[0] += 1
+        print(f"DEBUG: LLM call #{call_count[0]}")
+        if call_count[0] <= len(responses):
+            return responses[call_count[0] - 1]
+        # If more calls than responses, return last response
+        return responses[-1]
+    
+    mock_completions.create.side_effect = side_effect
     mock_chat.completions = mock_completions
     mock_client.chat = mock_chat
     return mock_client
@@ -140,7 +155,8 @@ class TestAgentRun:
 
         with patch("openai.OpenAI", return_value=mock_client):
             agent = Agent(api_key="test-key")
-            result = agent.run("台東今天天氣如何？")
+            with patch.object(agent, '_execute_tool', return_value={"success": True, "city": "Taitung", "temperature": 28, "weather": "多雲", "precipitation_probability": 20}):
+                result = agent.run("台東今天天氣如何？")
 
         assert result["success"] is True
         assert len(result["tool_calls"]) == 1
@@ -164,7 +180,8 @@ class TestAgentRun:
 
         with patch("openai.OpenAI", return_value=mock_client):
             agent = Agent(api_key="test-key")
-            result = agent.run("台東有什麼住宿推薦？")
+            with patch.object(agent, '_execute_tool', return_value={"success": True, "count": 56, "results": [{"name": "蘭舍民宿"}]}):
+                result = agent.run("台東有什麼住宿推薦？")
 
         assert result["success"] is True
         assert len(result["tool_calls"]) == 1
@@ -192,7 +209,11 @@ class TestAgentRun:
 
         with patch("openai.OpenAI", return_value=mock_client):
             agent = Agent(api_key="test-key")
-            result = agent.run("台東今天會下雨嗎？下雨適合去哪裡住宿？")
+            with patch.object(agent, '_execute_tool', side_effect=[
+                {"success": True, "city": "Taitung", "temperature": 25, "weather": "多雲"},
+                {"success": True, "count": 56, "results": [{"name": "蘭舍民宿"}]}
+            ]):
+                result = agent.run("台東今天會下雨嗎？下雨適合去哪裡住宿？")
 
         assert result["success"] is True
         assert len(result["tool_calls"]) == 2
@@ -212,7 +233,8 @@ class TestAgentRun:
 
         with patch("openai.OpenAI", return_value=mock_client):
             agent = Agent(api_key="test-key")
-            result = agent.run("台東天氣")
+            with patch.object(agent, '_execute_tool', return_value={"success": True, "city": "Taitung", "temperature": 25}):
+                result = agent.run("台東天氣")
 
             # Verify tool was called and result passed back
             assert len(result["tool_calls"]) == 1
@@ -221,9 +243,9 @@ class TestAgentRun:
 
     def test_max_tool_calls_limit(self):
         """Test agent respects max_tool_calls limit"""
-        # Create many tool calls
+        # Create 3 tool call responses (within limit)
         responses = []
-        for i in range(6):
+        for i in range(3):
             tc = MockToolCall(f"call_{i}", "get_weather", {"city": "Taitung"})
             msg = MockMessage(content=f"呼叫 {i}", tool_calls=[tc])
             responses.append(MockChatCompletion([MockChoice(msg)]))
@@ -234,10 +256,12 @@ class TestAgentRun:
 
         with patch("openai.OpenAI", return_value=mock_client):
             agent = Agent(api_key="test-key", max_tool_calls=3)
-            result = agent.run("測試限制")
+            # Mock tool execution to avoid real API calls
+            with patch.object(agent, '_execute_tool', return_value={"success": True, "city": "Taitung", "temperature": 25}):
+                result = agent.run("測試限制")
 
-        # Should stop at max_tool_calls (3) even though LLM wants more
-        assert len(result["tool_calls"]) <= 3
+        # Should stop at max_tool_calls (3)
+        assert len(result["tool_calls"]) == 3
 
     def test_unknown_tool_error_handling(self):
         """Test handling of unknown tool"""

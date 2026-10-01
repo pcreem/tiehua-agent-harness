@@ -5,12 +5,24 @@ Uses centralized AgentState for all execution state management.
 
 import os
 import json
+import time
 from typing import List, Dict, Any, Optional
 
 from dotenv import load_dotenv
 
 from src.state import AgentState, initialize_state
 from src.tools import WeatherTool, AttractionsTool, get_tool_registry
+from src.observability import (
+    get_logger,
+    get_metrics,
+    get_tracer,
+    trace_agent_run,
+    trace_llm_call,
+    trace_tool_call,
+    agent_logger,
+    tool_logger,
+    llm_logger,
+)
 
 load_dotenv()
 
@@ -150,25 +162,49 @@ class Agent:
         # Initialize centralized state
         state = initialize_state(user_query)
         state.add_message("user", user_query)
-        state = self.run_with_state(state)
 
-        # Return dict for backward compatibility
-        return {
-            "query": state.query,
-            "final_answer": state.answer or "",
-            "messages": state.messages,
-            "tool_calls": state.tool_calls,
-            "tool_results": state.tool_results,
-            "retry_count": state.retry_count,
-            "feedback": state.feedback,
-            "evaluation": state.evaluation,
-            "success": True,
-            "state": state.to_dict()
-        }
+        # Observability: track agent run
+        start_time = time.time()
+        run_id = state.run_id
+        metrics = get_metrics()
+        tracer = get_tracer()
+
+        with trace_agent_run(user_query, run_id) as span:
+            try:
+                state = self.run_with_state(state)
+                duration = time.time() - start_time
+
+                # Record metrics
+                metrics.record_agent_run("passed", duration)
+                span.set_attribute("agent.duration_seconds", duration)
+
+                # Record metrics
+                metrics.llm_calls_total.labels(model=self.model, status="success").inc()
+
+                return {
+                    "query": state.query,
+                    "final_answer": state.answer or "",
+                    "messages": state.messages,
+                    "tool_calls": state.tool_calls,
+                    "tool_results": state.tool_results,
+                    "retry_count": state.retry_count,
+                    "feedback": state.feedback,
+                    "evaluation": state.evaluation,
+                    "success": True,
+                    "state": state.to_dict()
+                }
+            except Exception as e:
+                duration = time.time() - start_time
+                metrics.record_agent_run("failed", duration)
+                metrics.record_error(type(e).__name__, "agent")
+                agent_logger.error("agent_run_failed", query=user_query, error=str(e), duration=duration)
+                raise
 
     def run_with_state(self, state: "AgentState") -> "AgentState":
         """Run agent with pre-initialized state, mutate and return state"""
         tool_call_count = 0
+        metrics = get_metrics()
+        tracer = get_tracer()
 
         while tool_call_count < self.max_tool_calls:
             # Prepare messages for LLM (convert state.messages to OpenAI format)
@@ -199,19 +235,39 @@ class Agent:
                 tools.append(schema.to_dict())
 
             # Call LLM with current messages from state
-            print(f"[DEBUG] Calling LLM (attempt {tool_call_count + 1})...", flush=True)
-            try:
-                response = self.llm_client.chat.completions.create(
-                    model=self.model,
-                    messages=openai_messages,
-                    tools=tools,
-                    tool_choice="auto",
-                    temperature=0.3,
-                )
-                print(f"[DEBUG] LLM responded", flush=True)
-            except Exception as e:
-                print(f"[DEBUG] LLM API error: {e}", flush=True)
-                raise RuntimeError(f"LLM API 呼叫失敗: {e}")
+            llm_start = time.time()
+            with trace_llm_call(self.model) as llm_span:
+                try:
+                    response = self.llm_client.chat.completions.create(
+                        model=self.model,
+                        messages=openai_messages,
+                        tools=tools,
+                        tool_choice="auto",
+                        temperature=0.3,
+                    )
+                    llm_span.set_attribute("llm.duration_seconds", time.time() - llm_start)
+                except Exception as e:
+                    llm_span.set_status(Status(StatusCode.ERROR, str(e)))
+                    llm_span.record_exception(e)
+                    llm_logger.error("llm_call_failed", model=self.model, error=str(e))
+                    raise RuntimeError(f"LLM API 呼叫失敗: {e}")
+
+            if not response.choices or not response.choices[0].message:
+                raise RuntimeError(f"LLM 回傳異常 (無 choices 或 message): {response}")
+
+            message = response.choices[0].message
+
+            # Record LLM metrics
+            llm_duration = time.time() - llm_start
+            metrics.record_llm_call(
+                model=self.model,
+                success=True,
+                duration=llm_duration,
+                prompt_tokens=response.usage.prompt_tokens if response.usage else 0,
+                completion_tokens=response.usage.completion_tokens if response.usage else 0,
+            )
+            llm_span.set_attribute("llm.prompt_tokens", response.usage.prompt_tokens if response.usage else 0)
+            llm_span.set_attribute("llm.completion_tokens", response.usage.completion_tokens if response.usage else 0)
 
             if not response.choices or not response.choices[0].message:
                 raise RuntimeError(f"LLM 回傳異常 (無 choices 或 message): {response}")
@@ -246,14 +302,32 @@ class Agent:
             for tool_call in message.tool_calls:
                 name = tool_call.function.name
                 args = json.loads(tool_call.function.arguments)
-                print(f"[DEBUG] Executing tool: {name} with args: {args}", flush=True)
+                tool_logger.info("tool_call_start", tool=name, args=args)
 
                 # Record tool call in state
                 state.add_tool_call(name, args, tool_call.id)
 
-                # Execute tool
-                result = self._execute_tool(name, args)
-                print(f"[DEBUG] Tool result: {result.get('success')}", flush=True)
+                # Execute tool with observability
+                tool_start = time.time()
+                with trace_tool_call(name, args) as tool_span:
+                    try:
+                        result = self._execute_tool(name, args)
+                        tool_span.set_attribute("tool.success", result.get("success", False))
+                    except Exception as e:
+                        tool_span.set_status(Status(StatusCode.ERROR, str(e)))
+                        tool_span.record_exception(e)
+                        tool_logger.error("tool_call_failed", tool=name, error=str(e))
+                        result = {
+                            "success": False,
+                            "error_type": "tool_execution_failed",
+                            "message": f"Tool execution failed: {str(e)}",
+                        }
+                    finally:
+                        tool_duration = time.time() - tool_start
+                        metrics.record_tool_call(name, result.get("success", False), tool_duration)
+                        tool_span.set_attribute("tool.duration_seconds", tool_duration)
+
+                tool_logger.info("tool_call_end", tool=name, success=result.get("success", False), duration=tool_duration)
 
                 # Record tool result in state
                 state.add_tool_result(name, args, result, tool_call.id)
