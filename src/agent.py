@@ -6,15 +6,16 @@ Uses centralized AgentState for all execution state management.
 import os
 import json
 from typing import List, Dict, Any, Optional
-from openai import OpenAI
+
 from dotenv import load_dotenv
 
 from src.state import AgentState, initialize_state
-
+from src.tools import WeatherTool, AttractionsTool, get_tool_registry
 
 load_dotenv()
 
 
+# Tool schemas for LLM function calling (backward compatibility)
 TOOLS = [
     {
         "type": "function",
@@ -81,29 +82,67 @@ class Agent:
         api_key: Optional[str] = None,
         model: str = "nvidia/nemotron-3-ultra-550b-a55b:free",
         base_url: str = "https://openrouter.ai/api/v1",
-        max_tool_calls: int = 5
+        max_tool_calls: int = 5,
+        llm_client = None,
     ):
         self.api_key = api_key or os.getenv("OPENROUTER_API_KEY")
         if not self.api_key:
             raise ValueError("OPENROUTER_API_KEY not set")
 
-        self.client = OpenAI(api_key=self.api_key, base_url=base_url, timeout=30.0)
+        # Store model for backward compatibility
         self.model = model
+
+        # Use provided LLM client or create default OpenRouter client
+        self.llm_client = llm_client
+        if self.llm_client is None:
+            # Backward compatibility: use OpenAI client directly so tests can mock src.agent.OpenAI
+            from openai import OpenAI
+            self.llm_client = OpenAI(api_key=self.api_key, base_url=base_url, timeout=30.0)
+
         self.max_tool_calls = max_tool_calls
+
+        # Initialize tools and registry
+        self.tools = [
+            WeatherTool(),
+            AttractionsTool(),
+        ]
+        self._tool_map = {tool.name: tool for tool in self.tools}
+
+    def _get_tool_schemas(self) -> List[Dict]:
+        """Get tool schemas for LLM function calling."""
+        schemas = []
+        for tool in self.tools:
+            schema = tool.get_schema()
+            schemas.append(schema.to_dict())
+        return schemas
 
     def _execute_tool(self, name: str, args: Dict[str, Any]) -> Dict[str, Any]:
         """Execute a tool by name with arguments"""
-        if name == "get_weather":
-            from src.tools.weather import get_weather
-            return get_weather(**args)
-        elif name == "search_attractions":
-            from src.tools.attractions import search_attractions
-            return search_attractions(**args)
-        else:
+        tool = self._tool_map.get(name)
+        if not tool:
             return {
                 "success": False,
                 "error_type": "unknown_tool",
                 "message": f"Unknown tool: {name}"
+            }
+
+        try:
+            # Validate and execute
+            input_obj = tool.validate_input(args)
+            result = tool.execute(input_obj)
+            if result.success:
+                return result.data.model_dump()
+            else:
+                return {
+                    "success": False,
+                    "error_type": result.error.type,
+                    "message": result.error.message,
+                }
+        except Exception as e:
+            return {
+                "success": False,
+                "error_type": "tool_execution_failed",
+                "message": f"Tool execution failed: {str(e)}",
             }
 
     def run(self, user_query: str) -> Dict[str, Any]:
@@ -132,13 +171,40 @@ class Agent:
         tool_call_count = 0
 
         while tool_call_count < self.max_tool_calls:
+            # Prepare messages for LLM (convert state.messages to OpenAI format)
+            openai_messages = []
+            for msg in state.messages:
+                if msg["role"] == "tool":
+                    openai_messages.append({
+                        "role": "tool",
+                        "content": msg["content"],
+                        "tool_call_id": msg.get("tool_call_id", ""),
+                    })
+                elif msg["role"] == "assistant" and "tool_calls" in msg:
+                    openai_messages.append({
+                        "role": "assistant",
+                        "content": msg.get("content"),
+                        "tool_calls": msg.get("tool_calls", []),
+                    })
+                else:
+                    openai_messages.append({
+                        "role": msg["role"],
+                        "content": msg.get("content"),
+                    })
+
+            # Prepare tools for LLM
+            tools = []
+            for tool in self.tools:
+                schema = tool.get_schema()
+                tools.append(schema.to_dict())
+
             # Call LLM with current messages from state
             print(f"[DEBUG] Calling LLM (attempt {tool_call_count + 1})...", flush=True)
             try:
-                response = self.client.chat.completions.create(
+                response = self.llm_client.chat.completions.create(
                     model=self.model,
-                    messages=state.messages,
-                    tools=TOOLS,
+                    messages=openai_messages,
+                    tools=tools,
                     tool_choice="auto",
                     temperature=0.3,
                 )
@@ -206,9 +272,9 @@ class Agent:
         return state
 
 
-def create_agent(api_key: Optional[str] = None) -> Agent:
+def create_agent(api_key: Optional[str] = None, llm_client=None) -> "Agent":
     """Factory function to create agent"""
-    return Agent(api_key=api_key)
+    return Agent(api_key=api_key, llm_client=llm_client)
 
 
 if __name__ == "__main__":
