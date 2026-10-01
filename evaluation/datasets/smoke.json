@@ -1,0 +1,142 @@
+[
+  {
+    "id": "weather-001",
+    "query": "台東今天天氣如何？",
+    "expected_behavior": {
+      "required_tools": ["get_weather"],
+      "forbidden_tools": [],
+      "required_facts": ["forecast"],
+      "required_conditions": ["weather_data_available"],
+      "must_be_grounded": true,
+      "expected_outcome": "回答必須依據 weather tool 的預報資料",
+      "category": "weather",
+      "difficulty": "easy"
+    }
+  },
+  {
+    "id": "weather-002",
+    "query": "台南明天會下雨嗎？",
+    "expected_behavior": {
+      "required_tools": ["get_weather"],
+      "forbidden_tools": [],
+      "required_facts": ["forecast", "precipitation"],
+      "required_conditions": ["weather_data_available"],
+      "must_be_grounded": true,
+      "expected_outcome": "回答必須包含降雨機率",
+      "category": "weather",
+      "difficulty": "easy"
+    }
+  },
+  {
+    "id": "weather-003",
+    "query": "台北這週天氣怎麼樣？",
+    "expected_behavior": {
+      "required_tools": ["get_weather"],
+      "forbidden_tools": [],
+      "required_facts": ["forecast"],
+      "required_conditions": ["weather_data_available"],
+      "must_be_grounded": true,
+      "expected_outcome": "回答必須依據 weather tool 的預報資料",
+      "category": "weather",
+      "difficulty": "medium"
+    }
+  },
+  {
+    "id": "attraction-001",
+    "query": "台東有什麼住宿推薦？",
+    "expected_behavior": {
+      "required_tools": ["search_attractions"],
+      "forbidden_tools": [],
+      "required_facts": ["accommodation_list"],
+      "required_conditions": ["attractions_available"],
+      "must_be_grounded": true,
+      "expected_outcome": "回答必須包含具體民宿/飯店名稱",
+      "category": "accommodation",
+      "difficulty": "easy"
+    }
+  },
+  {
+    "id": "attraction-002",
+    "query": "台東有什麼好玩的景點？",
+    "expected_behavior": {
+      "required_tools": ["search_attractions"],
+      "forbidden_tools": [],
+      "required_facts": ["attraction_list"],
+      "required_conditions": ["attractions_available"],
+      "must_be_grounded": true,
+      "expected_outcome": "回答必須包含具體景點名稱",
+      "category": "sightseeing",
+      "difficulty": "easy"
+    }
+  },
+  {
+    "id": "attraction-003",
+    "query": "台東有什麼好吃的？",
+    "expected_behavior": {
+      "required_tools": ["search_attractions"],
+      "forbidden_tools": [],
+      "required_facts": ["food_list"],
+      "required_conditions": ["attractions_available"],
+      "must_be_grounded": true,
+      "expected_outcome": "回答必須包含具體餐廳/小吃名稱",
+      "category": "food",
+      "difficulty": "easy"
+    }
+  },
+  {
+    "id": "rain-001",
+    "query": "台東下雨天適合去哪裡住宿？",
+    "expected_behavior": {
+      "required_tools": ["get_weather", "search_attractions"],
+      "forbidden_tools": [],
+      "required_facts": ["forecast", "accommodation_list"],
+      "required_conditions": ["weather_data_available", "accommodation_available"],
+      "must_be_grounded": true,
+      "expected_outcome": "回答必須包含天氣資訊並推薦住宿",
+      "category": "rain_accommodation",
+      "difficulty": "medium"
+    }
+  },
+  {
+    "id": "rain-002",
+    "query": "台東下雨天適合去哪裡玩？",
+    "expected_behavior": {
+      "required_tools": ["get_weather", "search_attractions"],
+      "forbidden_tools": [],
+      "required_facts": ["forecast", "activity_list"],
+      "required_conditions": ["weather_data_available", "activity_available"],
+      "must_be_grounded": true,
+      "expected_outcome": "回答必須優先推薦室內/有遮蔽景點",
+      "category": "rain_activity",
+      "difficulty": "medium"
+    }
+  },
+  {
+    "id": "rain-003",
+    "query": "我要去台東，今天會下雨嗎？如果會，適合去哪裡？",
+    "expected_behavior": {
+      "required_tools": ["get_weather", "search_attractions"],
+      "forbidden_tools": [],
+      "required_facts": ["forecast", "accommodation_or_activity"],
+      "required_conditions": ["weather_data_available", "attractions_available"],
+      "must_be_grounded": true,
+      "expected_outcome": "先回報天氣，再根據天氣推薦適合景點",
+      "category": "rain_mixed",
+      "difficulty": "medium"
+    }
+  },
+  {
+    "id": "mixed-001",
+    "query": "台東今天天氣如何？有什麼推薦住宿？",
+    "expected_behavior": {
+      "required_tools": ["get_weather", "search_attractions"],
+      "forbidden_tools": [],
+      "required_facts": ["forecast", "accommodation_list"],
+      "required_conditions": ["weather_data_available", "accommodation_available"],
+      "must_be_grounded": true,
+      "expected_outcome": "回答包含天氣資訊與住宿推薦",
+      "category": "weather_accommodation",
+      "difficulty": "easy"
+    }
+  }
+]

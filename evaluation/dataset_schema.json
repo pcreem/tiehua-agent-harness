@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Tiehua Evaluation Case",
+  "type": "object",
+  "required": ["id", "query", "expected_behavior"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Unique case identifier"
+    },
+    "query": {
+      "type": "string",
+      "description": "User query"
+    },
+    "expected_behavior": {
+      "type": "object",
+      "properties": {
+        "required_tools": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "forbidden_tools": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "required_facts": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "required_conditions": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "must_be_grounded": {
+          "type": "boolean"
+        },
+        "expected_outcome": {
+          "type": ["string", "null"]
+        },
+        "category": {
+          "type": "string"
+        },
+        "difficulty": {
+          "type": "string",
+          "enum": ["easy", "medium", "hard"]
+        }
+      }
+    }
+  }
+}

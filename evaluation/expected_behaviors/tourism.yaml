@@ -1,0 +1,57 @@
+# Expected Behaviors for Tourism Domain
+
+# Weather queries
+weather:
+  required_tools: ["get_weather"]
+  required_conditions: ["weather_data_available"]
+  must_be_grounded: true
+  category: "weather"
+
+# Accommodation queries
+accommodation:
+  required_tools: ["search_attractions"]
+  required_conditions: ["attractions_available"]
+  must_be_grounded: true
+  category: "accommodation"
+
+# Sightseeing queries
+sightseeing:
+  required_tools: ["search_attractions"]
+  required_conditions: ["attractions_available"]
+  must_be_grounded: true
+  category: "sightseeing"
+
+# Food queries
+food:
+  required_tools: ["search_attractions"]
+  required_conditions: ["attractions_available"]
+  must_be_grounded: true
+  category: "food"
+
+# Activity queries
+activity:
+  required_tools: ["search_attractions"]
+  required_conditions: ["attractions_available"]
+  must_be_grounded: true
+  category: "activity"
+
+# Rain + Accommodation
+rain_accommodation:
+  required_tools: ["get_weather", "search_attractions"]
+  required_conditions: ["weather_data_available", "accommodation_available"]
+  must_be_grounded: true
+  category: "rain_accommodation"
+
+# Rain + Activity
+rain_activity:
+  required_tools: ["get_weather", "search_attractions"]
+  required_conditions: ["weather_data_available", "activity_available"]
+  must_be_grounded: true
+  category: "rain_activity"
+
+# General rain query
+rain_mixed:
+  required_tools: ["get_weather", "search_attractions"]
+  required_conditions: ["weather_data_available", "attractions_available"]
+  must_be_grounded: true
+  category: "rain_mixed"

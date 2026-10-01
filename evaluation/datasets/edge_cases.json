@@ -1,0 +1,72 @@
+[
+  {
+    "id": "edge-001",
+    "query": "",
+    "expected_behavior": {
+      "required_tools": [],
+      "forbidden_tools": [],
+      "required_facts": [],
+      "required_conditions": [],
+      "must_be_grounded": false,
+      "expected_outcome": "應回傳錯誤或要求輸入查詢",
+      "category": "edge",
+      "difficulty": "easy"
+    }
+  },
+  {
+    "id": "edge-002",
+    "query": "你好",
+    "expected_behavior": {
+      "required_tools": [],
+      "forbidden_tools": [],
+      "required_facts": [],
+      "required_conditions": [],
+      "must_be_grounded": false,
+      "expected_outcome": "一般問候回應，不需呼叫工具",
+      "category": "conversation",
+      "difficulty": "easy"
+    }
+  },
+  {
+    "id": "edge-003",
+    "query": "火星今天天氣如何？",
+    "expected_behavior": {
+      "required_tools": ["get_weather"],
+      "forbidden_tools": [],
+      "required_facts": [],
+      "required_conditions": [],
+      "must_be_grounded": false,
+      "expected_outcome": "工具應回傳 city_not_found 錯誤",
+      "category": "error_handling",
+      "difficulty": "easy"
+    }
+  },
+  {
+    "id": "edge-004",
+    "query": "台東有什麼住宿？台南有什麼景點？",
+    "expected_behavior": {
+      "required_tools": ["search_attractions"],
+      "forbidden_tools": [],
+      "required_facts": ["accommodation_list", "sightseeing_list"],
+      "required_conditions": ["attractions_available"],
+      "must_be_grounded": true,
+      "expected_outcome": "回答應包含兩個城市的資訊",
+      "category": "multi_city",
+      "difficulty": "hard"
+    }
+  },
+  {
+    "id": "edge-005",
+    "query": "台東有沒有五星級飯店？",
+    "expected_behavior": {
+      "required_tools": ["search_attractions"],
+      "forbidden_tools": [],
+      "required_facts": ["accommodation_list"],
+      "required_conditions": ["attractions_available"],
+      "must_be_grounded": true,
+      "expected_outcome": "若無五星級則說明無，推薦其他住宿",
+      "category": "specific_query",
+      "difficulty": "medium"
+    }
+  }
+]

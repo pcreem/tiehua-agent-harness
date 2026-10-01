@@ -1,0 +1,52 @@
+[
+  {
+    "id": "regression-001",
+    "query": "台東今天天氣如何？",
+    "expected_behavior": {
+      "required_tools": ["get_weather"],
+      "must_be_grounded": true,
+      "category": "weather",
+      "difficulty": "easy"
+    }
+  },
+  {
+    "id": "regression-002",
+    "query": "台東有什麼住宿推薦？",
+    "expected_behavior": {
+      "required_tools": ["search_attractions"],
+      "must_be_grounded": true,
+      "category": "accommodation",
+      "difficulty": "easy"
+    }
+  },
+  {
+    "id": "regression-003",
+    "query": "台東下雨天適合去哪裡住宿？",
+    "expected_behavior": {
+      "required_tools": ["get_weather", "search_attractions"],
+      "must_be_grounded": true,
+      "category": "rain_accommodation",
+      "difficulty": "medium"
+    }
+  },
+  {
+    "id": "regression-004",
+    "query": "台東有什麼好玩的？",
+    "expected_behavior": {
+      "required_tools": ["search_attractions"],
+      "must_be_grounded": true,
+      "category": "sightseeing",
+      "difficulty": "easy"
+    }
+  },
+  {
+    "id": "regression-004",
+    "query": "台東會下雨嗎？下雨去哪裡？",
+    "expected_behavior": {
+      "required_tools": ["get_weather", "search_attractions"],
+      "must_be_grounded": true,
+      "category": "rain_mixed",
+      "difficulty": "medium"
+    }
+  }
+]
