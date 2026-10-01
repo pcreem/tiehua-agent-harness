@@ -111,7 +111,24 @@ class Agent:
         # Initialize centralized state
         state = initialize_state(user_query)
         state.add_message("user", user_query)
+        state = self.run_with_state(state)
 
+        # Return dict for backward compatibility
+        return {
+            "query": state.query,
+            "final_answer": state.answer or "",
+            "messages": state.messages,
+            "tool_calls": state.tool_calls,
+            "tool_results": state.tool_results,
+            "retry_count": state.retry_count,
+            "feedback": state.feedback,
+            "evaluation": state.evaluation,
+            "success": True,
+            "state": state.to_dict()
+        }
+
+    def run_with_state(self, state: "AgentState") -> "AgentState":
+        """Run agent with pre-initialized state, mutate and return state"""
         tool_call_count = 0
 
         while tool_call_count < self.max_tool_calls:
@@ -186,21 +203,7 @@ class Agent:
 
             state.increment_retry()
 
-        # Get final answer from state
-        final_answer = state.answer or ""
-
-        return {
-            "query": state.query,
-            "final_answer": final_answer,
-            "messages": state.messages,
-            "tool_calls": state.tool_calls,
-            "tool_results": state.tool_results,
-            "retry_count": state.retry_count,
-            "feedback": state.feedback,
-            "evaluation": state.evaluation,
-            "success": True,
-            "state": state.to_dict()
-        }
+        return state
 
 
 def create_agent(api_key: Optional[str] = None) -> Agent:

@@ -45,6 +45,13 @@ class AgentState:
     # Error tracking
     last_error: Optional[Dict[str, Any]] = None
 
+    # Formal version fields (P0)
+    run_id: str = field(default_factory=lambda: "")
+    attempt: int = 0
+    max_retries: int = 2
+    status: str = "running"  # running, passed, failed, fallback
+    metadata: Dict[str, Any] = field(default_factory=dict)
+
     # Metadata
     created_at: str = field(default_factory=lambda: datetime.now().isoformat())
     updated_at: str = field(default_factory=lambda: datetime.now().isoformat())
@@ -101,6 +108,16 @@ class AgentState:
         self.retry_count += 1
         self.update_timestamp()
 
+    def increment_attempt(self):
+        """Increment attempt counter for retry loop."""
+        self.attempt += 1
+        self.update_timestamp()
+
+    def set_status(self, status: str):
+        """Set execution status."""
+        self.status = status
+        self.update_timestamp()
+
     def set_error(self, error: Dict[str, Any]):
         """Record last error."""
         self.last_error = error
@@ -134,6 +151,11 @@ class AgentState:
             "feedback": self.feedback,
             "retry_count": self.retry_count,
             "last_error": self.last_error,
+            "run_id": self.run_id,
+            "attempt": self.attempt,
+            "max_retries": self.max_retries,
+            "status": self.status,
+            "metadata": self.metadata,
             "created_at": self.created_at,
             "updated_at": self.updated_at,
         }
@@ -152,6 +174,11 @@ class AgentState:
             feedback=data.get("feedback", []),
             retry_count=data.get("retry_count", 0),
             last_error=data.get("last_error"),
+            run_id=data.get("run_id", ""),
+            attempt=data.get("attempt", 0),
+            max_retries=data.get("max_retries", 2),
+            status=data.get("status", "running"),
+            metadata=data.get("metadata", {}),
             created_at=data.get("created_at", datetime.now().isoformat()),
             updated_at=data.get("updated_at", datetime.now().isoformat()),
         )
@@ -162,17 +189,26 @@ class AgentState:
         return copy.deepcopy(self)
 
 
-def initialize_state(query: str) -> AgentState:
+def initialize_state(query: str, max_retries: int = 2) -> AgentState:
     """Initialize a new AgentState with the user query.
 
     Args:
         query: The original user query
+        max_retries: Maximum number of retries allowed
 
     Returns:
         Initialized AgentState with system prompt in messages
     """
     from src.agent import SYSTEM_PROMPT
+    import uuid
 
-    state = AgentState(query=query)
+    state = AgentState(
+        query=query,
+        max_retries=max_retries,
+        run_id=str(uuid.uuid4())[:8],
+        attempt=0,
+        status="running",
+        metadata={},
+    )
     state.messages = [{"role": "system", "content": SYSTEM_PROMPT}]
     return state
