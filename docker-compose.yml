@@ -1,0 +1,142 @@
+version: '3.8'
+
+services:
+  # Main API service
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tiehua-api
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    volumes:
+      - ./data:/app/data:ro
+      - ./prompts:/app/prompts:ro
+      - ./config:/app/config:ro
+    restart: unless-stopped
+    networks:
+      - tiehua-network
+
+  # Streamlit Dashboard
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile.dashboard
+    container_name: tiehua-dashboard
+    env_file:
+      - .env
+    ports:
+      - "8501:8501"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    volumes:
+      - ./evaluation/reports:/app/evaluation/reports:rw
+      - ./data:/app/data:ro
+    depends_on:
+      - api
+    restart: unless-stopped
+    networks:
+      - tiehua-network
+
+  # Chroma Vector Store (for RAG)
+  chroma:
+    image: chromadb/chroma:1.0.7
+    container_name: tiehua-chroma
+    ports:
+      - "8001:8000"
+    volumes:
+      - chroma-data:/chroma/chroma
+    environment:
+      - CHROMA_SERVER_HOST=0.0.0.0
+      - CHROMA_SERVER_HTTP_PORT=8000
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v2/heartbeat"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - tiehua-network
+
+  # PostgreSQL with PGVector (production vector store)
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: tiehua-postgres
+    environment:
+      - POSTGRES_DB=tiehua
+      - POSTGRES_USER=tiehua
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-tiehua_password}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./scripts/init-pgvector.sql:/docker-entrypoint-initdb.d/init-pgvector.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tiehua -d tiehua"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - tiehua-network
+
+  # Redis for caching (optional)
+  redis:
+    image: redis:7-alpine
+    container_name: tiehua-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    restart: unless-stopped
+    networks:
+      - tiehua-network
+
+  # Evaluation runner (batch job)
+  evaluator:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tiehua-evaluator
+    env_file:
+      - .env
+    command: python -m evaluation.runner --dataset evaluation/datasets/smoke.json --output evaluation/reports/report_$(date +%Y%m%d_%H%M%S).json
+    volumes:
+      - ./evaluation:/app/evaluation:rw
+      - ./data:/app/data:ro
+      - ./prompts:/app/prompts:ro
+    depends_on:
+      - api
+    profiles:
+      - evaluation
+    networks:
+      - tiehua-network
+
+volumes:
+  chroma-data:
+  postgres-data:
+  redis-data:
+
+networks:
+  tiehua-network:
+    driver: bridge

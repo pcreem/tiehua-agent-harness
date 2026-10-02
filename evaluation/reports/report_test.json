@@ -1,0 +1,70 @@
+{
+  "total": 10,
+  "passed": 0,
+  "failed": 0,
+  "errors": 10,
+  "pass_rate": 0.0,
+  "timestamp": "2026-10-02T20:57:18.297402",
+  "results": [
+    {
+      "id": "weather-001",
+      "query": "台東今天天氣如何？",
+      "status": "error",
+      "error": "[Errno 32] Broken pipe"
+    },
+    {
+      "id": "weather-002",
+      "query": "台南明天會下雨嗎？",
+      "status": "error",
+      "error": "[Errno 32] Broken pipe"
+    },
+    {
+      "id": "weather-003",
+      "query": "台北這週天氣怎麼樣？",
+      "status": "error",
+      "error": "[Errno 32] Broken pipe"
+    },
+    {
+      "id": "attraction-001",
+      "query": "台東有什麼住宿推薦？",
+      "status": "error",
+      "error": "[Errno 32] Broken pipe"
+    },
+    {
+      "id": "attraction-002",
+      "query": "台東有什麼好玩的景點？",
+      "status": "error",
+      "error": "[Errno 32] Broken pipe"
+    },
+    {
+      "id": "attraction-003",
+      "query": "台東有什麼好吃的？",
+      "status": "error",
+      "error": "[Errno 32] Broken pipe"
+    },
+    {
+      "id": "rain-001",
+      "query": "台東下雨天適合去哪裡住宿？",
+      "status": "error",
+      "error": "[Errno 32] Broken pipe"
+    },
+    {
+      "id": "rain-002",
+      "query": "台東下雨天適合去哪裡玩？",
+      "status": "error",
+      "error": "[Errno 32] Broken pipe"
+    },
+    {
+      "id": "rain-003",
+      "query": "我要去台東，今天會下雨嗎？如果會，適合去哪裡？",
+      "status": "error",
+      "error": "[Errno 32] Broken pipe"
+    },
+    {
+      "id": "mixed-001",
+      "query": "台東今天天氣如何？有什麼推薦住宿？",
+      "status": "error",
+      "error": "[Errno 32] Broken pipe"
+    }
+  ]
+}

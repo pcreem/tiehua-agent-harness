@@ -1,11 +1,12 @@
 """Harness runner for executing agent queries."""
 
-from typing import Optional, Callable
+from typing import Optional, Callable, Literal
 import time
 import logging
 
 from src.state import AgentState, initialize_state
 from src.harness.loop import HarnessLoop
+from src.harness.graph import HarnessGraphRunner
 from src.harness.result import HarnessResult
 from src.agent import create_agent
 from src.observability import (
@@ -15,22 +16,28 @@ from src.observability import (
     trace_retry,
     harness_logger,
 )
+from src.observability.tracing import trace_agent_run
 
 logger = logging.getLogger(__name__)
 
 
 class HarnessRunner:
-    """Runs the agent harness with full retry loop."""
+    """Runs the agent harness with full retry loop.
+
+    Supports both legacy (HarnessLoop) and LangGraph-based execution.
+    """
 
     def __init__(
         self,
         agent_factory: Optional[Callable] = None,
         max_retries: int = 2,
         evaluator_fn: Optional[Callable] = None,
+        use_langgraph: bool = True,
     ):
         self.agent_factory = agent_factory or create_agent
         self.max_retries = max_retries
         self.evaluator_fn = evaluator_fn
+        self.use_langgraph = use_langgraph
         self.logger = logging.getLogger(__name__)
 
     def run(self, query: str) -> HarnessResult:
@@ -48,15 +55,10 @@ class HarnessRunner:
 
         with trace_agent_run(query, state.run_id) as span:
             try:
-                # Create harness loop - use run_with_state which accepts AgentState
-                harness_loop = HarnessLoop(
-                    agent_fn=lambda s: agent.run_with_state(s),
-                    evaluator_fn=self.evaluator_fn,
-                    max_retries=self.max_retries,
-                )
-
-                # Execute with retry loop
-                final_state = harness_loop.execute(state)
+                if self.use_langgraph:
+                    final_state = self._run_with_langgraph(agent, state)
+                else:
+                    final_state = self._run_with_loop(agent, state)
 
                 duration = time.time() - start_time
 
@@ -93,6 +95,39 @@ class HarnessRunner:
                 harness_logger.error("harness_failed", query=query[:100], error=str(e), duration=duration)
                 raise
 
+    def _run_with_langgraph(self, agent, state: AgentState) -> AgentState:
+        """Execute using LangGraph-based harness."""
+        graph_runner = HarnessGraphRunner(
+            agent_fn=lambda s: agent.run_with_state(s),
+            evaluator_fn=self.evaluator_fn,
+            max_retries=self.max_retries,
+            thread_id=state.run_id,
+        )
+        return graph_runner.run(state.query)
+
+    def _run_with_loop(self, agent, state: AgentState) -> AgentState:
+        """Execute using legacy HarnessLoop."""
+        harness_loop = HarnessLoop(
+            agent_fn=lambda s: agent.run_with_state(s),
+            evaluator_fn=self.evaluator_fn,
+            max_retries=self.max_retries,
+        )
+        return harness_loop.execute(state)
+
     def run_streaming(self, query: str):
-        """Run harness with streaming results (not yet implemented)."""
-        raise NotImplementedError("Streaming not yet implemented")
+        """Run harness with streaming results for real-time monitoring."""
+        if not self.use_langgraph:
+            raise NotImplementedError("Streaming only available with LangGraph")
+
+        agent = self.agent_factory()
+        state = initialize_state(query, max_retries=self.max_retries)
+
+        graph_runner = HarnessGraphRunner(
+            agent_fn=lambda s: agent.run_with_state(s),
+            evaluator_fn=self.evaluator_fn,
+            max_retries=self.max_retries,
+            thread_id=state.run_id,
+        )
+
+        for step in graph_runner.run_streaming(query):
+            yield step

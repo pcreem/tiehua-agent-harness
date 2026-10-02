@@ -52,6 +52,11 @@ class AgentState:
     status: str = "running"  # running, passed, failed, fallback
     metadata: Dict[str, Any] = field(default_factory=dict)
 
+    # Multilingual & Intent fields (P1)
+    language: str = "zh-TW"          # Detected/selected language: zh-TW, en, ja
+    user_intent: str = "unknown"     # Classified intent: weather, attraction, general, mixed
+    intent_confidence: float = 0.0   # Confidence score for intent classification
+
     # Metadata
     created_at: str = field(default_factory=lambda: datetime.now().isoformat())
     updated_at: str = field(default_factory=lambda: datetime.now().isoformat())
@@ -156,6 +161,9 @@ class AgentState:
             "max_retries": self.max_retries,
             "status": self.status,
             "metadata": self.metadata,
+            "language": self.language,
+            "user_intent": self.user_intent,
+            "intent_confidence": self.intent_confidence,
             "created_at": self.created_at,
             "updated_at": self.updated_at,
         }
@@ -179,6 +187,9 @@ class AgentState:
             max_retries=data.get("max_retries", 2),
             status=data.get("status", "running"),
             metadata=data.get("metadata", {}),
+            language=data.get("language", "zh-TW"),
+            user_intent=data.get("user_intent", "unknown"),
+            intent_confidence=data.get("intent_confidence", 0.0),
             created_at=data.get("created_at", datetime.now().isoformat()),
             updated_at=data.get("updated_at", datetime.now().isoformat()),
         )

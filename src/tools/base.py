@@ -163,6 +163,10 @@ class ToolRegistry:
         """Get all tool schemas for LLM."""
         return [tool.get_schema() for tool in self._tools.values()]
 
+    def get_schemas_dict(self) -> List[Dict[str, Any]]:
+        """Get all tool schemas as dictionaries for LLM function calling."""
+        return [tool.get_schema().to_dict() for tool in self._tools.values()]
+
     def execute(self, name: str, input: Dict[str, Any]) -> ToolResult:
         """Execute tool by name with raw input."""
         tool = self.get(name)
