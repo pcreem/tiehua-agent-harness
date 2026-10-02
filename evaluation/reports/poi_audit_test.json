@@ -1,0 +1,70 @@
+{
+  "generated_at": "2026-10-03T04:47:14.014355",
+  "data_source": "Taitung County Government Open Data",
+  "summary": {
+    "total_pois": 5,
+    "passed": 5,
+    "warnings": 5,
+    "failures": 0,
+    "hallucination_count": 0,
+    "format_issues_count": 5,
+    "freshness_issues_count": 0
+  },
+  "hallucination_findings": [],
+  "format_issues": [
+    {
+      "poi_id": "Hotel_A15010000H_000317",
+      "field": "last_updated",
+      "issue_type": "format",
+      "severity": "medium",
+      "message": "Invalid date format (expected ISO 8601): 2025/6/3 上午 11:58:11",
+      "current_value": "2025/6/3 上午 11:58:11",
+      "suggested_fix": "Use ISO 8601 format: YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS"
+    },
+    {
+      "poi_id": "Hotel_A15010000H_000989",
+      "field": "last_updated",
+      "issue_type": "format",
+      "severity": "medium",
+      "message": "Invalid date format (expected ISO 8601): 2026/8/28 下午 02:48:54",
+      "current_value": "2026/8/28 下午 02:48:54",
+      "suggested_fix": "Use ISO 8601 format: YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS"
+    },
+    {
+      "poi_id": "Hotel_A15010000H_002058",
+      "field": "last_updated",
+      "issue_type": "format",
+      "severity": "medium",
+      "message": "Invalid date format (expected ISO 8601): 2025/6/18 上午 10:46:56",
+      "current_value": "2025/6/18 上午 10:46:56",
+      "suggested_fix": "Use ISO 8601 format: YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS"
+    },
+    {
+      "poi_id": "Hotel_A15010000H_003920",
+      "field": "last_updated",
+      "issue_type": "format",
+      "severity": "medium",
+      "message": "Invalid date format (expected ISO 8601): 2026/8/28 下午 05:00:32",
+      "current_value": "2026/8/28 下午 05:00:32",
+      "suggested_fix": "Use ISO 8601 format: YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS"
+    },
+    {
+      "poi_id": "Hotel_A15010000H_007862",
+      "field": "last_updated",
+      "issue_type": "format",
+      "severity": "medium",
+      "message": "Invalid date format (expected ISO 8601): 2026/8/28 下午 05:27:22",
+      "current_value": "2026/8/28 下午 05:27:22",
+      "suggested_fix": "Use ISO 8601 format: YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS"
+    }
+  ],
+  "freshness_issues": [],
+  "by_category": {
+    "accommodation": {
+      "pass": 0,
+      "warn": 5,
+      "fail": 0,
+      "total": 5
+    }
+  }
+}
