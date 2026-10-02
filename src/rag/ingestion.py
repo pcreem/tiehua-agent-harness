@@ -190,7 +190,7 @@ def create_ingestion_pipeline(
     chunk_strategy: str = "fixed",
     chunk_size: int = 512,
     chunk_overlap: int = 50,
-    embedding_model: str = "text-embedding-3-small",
+    embedding_model: str = "nvidia/nemotron-3-embed-1b:free",
     vector_provider: str = "chroma",
     persist_dir: str = "./data/vectorstore",
 ) -> IngestionPipeline:
@@ -201,7 +201,10 @@ def create_ingestion_pipeline(
         chunk_size=chunk_size,
         chunk_overlap=chunk_overlap,
     )
-    builder._embedding_config = EmbeddingConfig(model=embedding_model)
+    builder._embedding_config = EmbeddingConfig(
+        provider="openrouter",
+        model=embedding_model,
+    )
     builder._vector_config = VectorStoreConfig(
         provider=vector_provider,
         persist_dir=persist_dir,

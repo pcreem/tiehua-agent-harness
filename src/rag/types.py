@@ -48,6 +48,15 @@ class RetrievalResult:
     rank: int
 
 
+@dataclass
+class RetrievalContext:
+    """Context for retrieval."""
+    query: str
+    query_embedding: List[float]
+    config: RetrievalConfig
+    filters: Optional[Dict[str, Any]] = None
+
+
 class ChunkConfig(BaseModel):
     """Configuration for chunking."""
     strategy: ChunkStrategy = ChunkStrategy.FIXED
@@ -60,15 +69,15 @@ class RetrievalConfig(BaseModel):
     """Configuration for retrieval."""
     strategy: RetrievalStrategy = RetrievalStrategy.VECTOR
     top_k: int = 5
-    similarity_threshold: float = 0.7
+    similarity_threshold: float = 0.5
     rerank_top_k: int = 10
 
 
 class EmbeddingConfig(BaseModel):
     """Configuration for embeddings."""
     provider: str = "openrouter"  # openai, openrouter, mock
-    model: str = "text-embedding-3-small"
-    dimensions: int = 1536
+    model: str = "nvidia/nemotron-3-embed-1b:free"
+    dimensions: int = 2048
     batch_size: int = 100
     api_key: Optional[str] = None
     base_url: Optional[str] = None

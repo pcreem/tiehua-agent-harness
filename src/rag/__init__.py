@@ -33,10 +33,12 @@ class RAGSystem:
     def __init__(
         self,
         retriever,
+        embedder,
         reranker=None,
         retrieval_config: RetrievalConfig = None,
     ):
         self.retriever = retriever
+        self.embedder = embedder
         self.reranker = reranker
         self.retrieval_config = retrieval_config or RetrievalConfig()
 
@@ -50,6 +52,9 @@ class RAGSystem:
         **reranker_kwargs,
     ) -> "RAGSystem":
         """Create RAG system from configuration."""
+        # Create embedder
+        embedder = EmbeddingFactory.create(embedding_config)
+
         # Create retriever
         retriever = RetrieverFactory.create_full_pipeline(
             retrieval_config, embedding_config, vector_config
@@ -60,24 +65,22 @@ class RAGSystem:
         if reranker_type:
             reranker = RerankerFactory.create(reranker_type, **reranker_kwargs)
 
-        return cls(retriever=retriever, reranker=reranker, retrieval_config=retrieval_config)
+        return cls(retriever=retriever, embedder=embedder, reranker=reranker, retrieval_config=retrieval_config)
 
     def retrieve(self, query: str, filters: Optional[Dict[str, Any]] = None) -> List[RetrievalResult]:
         """Retrieve relevant chunks for query."""
         from .types import RetrievalContext
 
-        # Get query embedding
-        # Note: retriever should have embedder access
-        # This is a simplified interface
+        # Get query embedding using the embedder
+        query_embedding = self.embedder.embed_query(query)
+
         context = RetrievalContext(
             query=query,
-            query_embedding=[],  # Will be filled by retriever
+            query_embedding=query_embedding,
             config=self.retrieval_config,
             filters=filters,
         )
 
-        # This would need the actual embedder to be accessible
-        # For now, delegate to retriever's internal logic
         results = self.retriever.retrieve(context)
 
         # Rerank if configured
@@ -110,7 +113,7 @@ def create_rag_system(
     chunk_strategy: str = "fixed",
     chunk_size: int = 512,
     chunk_overlap: int = 50,
-    embedding_model: str = "text-embedding-3-small",
+    embedding_model: str = "nvidia/nemotron-3-embed-1b:free",
     vector_provider: str = "chroma",
     persist_dir: str = "./data/vectorstore",
     retrieval_strategy: str = "vector",
@@ -125,7 +128,10 @@ def create_rag_system(
         chunk_overlap=chunk_overlap,
     )
 
-    embedding_config = EmbeddingConfig(model=embedding_model)
+    embedding_config = EmbeddingConfig(
+        provider="openrouter",
+        model=embedding_model,
+    )
 
     vector_config = VectorStoreConfig(
         provider=vector_provider,
@@ -137,6 +143,9 @@ def create_rag_system(
         top_k=top_k,
     )
 
+    # Create embedder
+    embedder = EmbeddingFactory.create(embedding_config)
+
     # Create retriever
     retriever = RetrieverFactory.create_full_pipeline(
         retrieval_config, embedding_config, vector_config
@@ -147,6 +156,7 @@ def create_rag_system(
 
     return RAGSystem(
         retriever=retriever,
+        embedder=embedder,
         reranker=reranker,
         retrieval_config=retrieval_config,
     )

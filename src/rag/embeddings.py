@@ -94,16 +94,28 @@ class EmbeddingFactory:
 
     @staticmethod
     def create(config: EmbeddingConfig) -> BaseEmbedder:
-        """Create embedder based on config."""
-        # Use mock if no API key available and not explicitly requesting real provider
+        """Create embedder based on config.
+        
+        Priority:
+        1. If provider is explicitly "mock" -> use MockEmbedder
+        2. If provider is "openai" or "openrouter" and API key available -> use OpenAIEmbedder
+        3. If no API key but provider is real -> raise error (force explicit decision)
+        4. If provider not specified -> default to real if API key available, else error
+        """
+        if config.provider == "mock":
+            return MockEmbedder(config)
+        
+        # For real providers (openai, openrouter), require API key
         if config.provider in ("openai", "openrouter"):
             api_key = config.api_key or os.getenv("OPENROUTER_API_KEY") or os.getenv("OPENAI_API_KEY")
             if not api_key:
-                # Fallback to mock if no credentials
-                return MockEmbedder(config)
+                raise ValueError(
+                    f"No API key found for provider '{config.provider}'. "
+                    "Set OPENROUTER_API_KEY or OPENAI_API_KEY environment variable, "
+                    "or provide api_key in EmbeddingConfig, "
+                    "or explicitly set provider='mock' for testing."
+                )
             return OpenAIEmbedder(config)
-        elif config.provider == "mock":
-            return MockEmbedder(config)
-        else:
-            # Default to mock for testing
-            return MockEmbedder(config)
+        
+        # Unknown provider
+        raise ValueError(f"Unknown embedding provider: {config.provider}. Use 'openai', 'openrouter', or 'mock'.")

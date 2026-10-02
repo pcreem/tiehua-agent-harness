@@ -23,6 +23,7 @@ from src.observability import (
     tool_logger,
     llm_logger,
 )
+from src.safety import create_guardrails_pipeline, get_guardrails_pipeline
 
 load_dotenv()
 
@@ -120,6 +121,9 @@ class Agent:
         ]
         self._tool_map = {tool.name: tool for tool in self.tools}
 
+        # Initialize safety pipeline
+        self.safety_pipeline = create_guardrails_pipeline()
+
     def _get_tool_schemas(self) -> List[Dict]:
         """Get tool schemas for LLM function calling."""
         schemas = []
@@ -162,6 +166,28 @@ class Agent:
         # Initialize centralized state
         state = initialize_state(user_query)
         state.add_message("user", user_query)
+
+        # Safety check on input
+        safety_result = self.safety_pipeline.check_input(user_query)
+        if not safety_result.passed and safety_result.action == "block":
+            return {
+                "query": user_query,
+                "final_answer": "您的輸入包含不安全內容，無法處理。",
+                "messages": state.messages,
+                "tool_calls": [],
+                "tool_results": [],
+                "retry_count": 0,
+                "feedback": [],
+                "evaluation": None,
+                "success": False,
+                "state": state.to_dict(),
+                "safety": {
+                    "action": safety_result.action,
+                    "violations": [v.message for v in safety_result.violations],
+                },
+            }
+        if safety_result.sanitized_input:
+            state.messages[-1]["content"] = safety_result.sanitized_input
 
         # Observability: track agent run
         start_time = time.time()
@@ -304,28 +330,38 @@ class Agent:
                 args = json.loads(tool_call.function.arguments)
                 tool_logger.info("tool_call_start", tool=name, args=args)
 
-                # Record tool call in state
-                state.add_tool_call(name, args, tool_call.id)
+                # Safety check on tool arguments
+                tool_safety = self.safety_pipeline.check_tool_args(name, args)
+                if not tool_safety.passed and tool_safety.action == "block":
+                    result = {
+                        "success": False,
+                        "error_type": "tool_safety_violation",
+                        "message": f"工具參數安全檢查失敗: {'; '.join(v.message for v in tool_safety.violations)}",
+                    }
+                    tool_logger.warning("tool_call_blocked", tool=name, violations=[v.message for v in tool_safety.violations])
+                else:
+                    # Record tool call in state
+                    state.add_tool_call(name, args, tool_call.id)
 
-                # Execute tool with observability
-                tool_start = time.time()
-                with trace_tool_call(name, args) as tool_span:
-                    try:
-                        result = self._execute_tool(name, args)
-                        tool_span.set_attribute("tool.success", result.get("success", False))
-                    except Exception as e:
-                        tool_span.set_status(Status(StatusCode.ERROR, str(e)))
-                        tool_span.record_exception(e)
-                        tool_logger.error("tool_call_failed", tool=name, error=str(e))
-                        result = {
-                            "success": False,
-                            "error_type": "tool_execution_failed",
-                            "message": f"Tool execution failed: {str(e)}",
-                        }
-                    finally:
-                        tool_duration = time.time() - tool_start
-                        metrics.record_tool_call(name, result.get("success", False), tool_duration)
-                        tool_span.set_attribute("tool.duration_seconds", tool_duration)
+                    # Execute tool with observability
+                    tool_start = time.time()
+                    with trace_tool_call(name, args) as tool_span:
+                        try:
+                            result = self._execute_tool(name, args)
+                            tool_span.set_attribute("tool.success", result.get("success", False))
+                        except Exception as e:
+                            tool_span.set_status(Status(StatusCode.ERROR, str(e)))
+                            tool_span.record_exception(e)
+                            tool_logger.error("tool_call_failed", tool=name, error=str(e))
+                            result = {
+                                "success": False,
+                                "error_type": "tool_execution_failed",
+                                "message": f"Tool execution failed: {str(e)}",
+                            }
+                        finally:
+                            tool_duration = time.time() - tool_start
+                            metrics.record_tool_call(name, result.get("success", False), tool_duration)
+                            tool_span.set_attribute("tool.duration_seconds", tool_duration)
 
                 tool_logger.info("tool_call_end", tool=name, success=result.get("success", False), duration=tool_duration)
 
