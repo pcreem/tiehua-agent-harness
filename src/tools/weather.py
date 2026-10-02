@@ -17,6 +17,19 @@ WEATHER_CODE_MAP = {
     95: "thunderstorm", 96: "thunderstorm", 99: "thunderstorm",
 }
 
+# Localized weather descriptions
+WEATHER_DESCRIPTIONS = {
+    "zh-TW": {
+        "clear": "晴朗", "cloudy": "多雲", "rain": "雨", "snow": "雪", "thunderstorm": "雷暴", "unknown": "未知"
+    },
+    "en": {
+        "clear": "Clear", "cloudy": "Cloudy", "rain": "Rain", "snow": "Snow", "thunderstorm": "Thunderstorm", "unknown": "Unknown"
+    },
+    "ja": {
+        "clear": "快晴", "cloudy": "曇り", "rain": "雨", "snow": "雪", "thunderstorm": "雷雨", "unknown": "不明"
+    }
+}
+
 CITY_NAME_MAP = {
     "台東": "Taitung", "臺東": "Taitung", "台北": "Taipei", "臺北": "Taipei",
     "台北市": "Taipei", "臺北市": "Taipei", "台中": "Taichung", "臺中": "Taichung",
@@ -40,6 +53,7 @@ DEFAULT_TIMEOUT = 10
 class WeatherInput(BaseModel):
     """Input schema for weather tool."""
     city: str = Field(..., description="City name (e.g., Taitung, Taipei, 台東, 台北)")
+    language: str = Field(default="zh-TW", description="Response language: zh-TW, en, ja")
 
 
 class WeatherOutput(BaseModel):
@@ -51,8 +65,10 @@ class WeatherOutput(BaseModel):
     precipitation_probability: Optional[int] = None
     daily_precipitation_probability_max: Optional[int] = None
     weather_code: Optional[int] = None
-    weather: Optional[str] = None
+    weather: Optional[str] = None          # English weather code (for internal use)
+    weather_description: Optional[str] = None  # Localized description
     source: str = "open-meteo"
+    language: str = "zh-TW"
 
 
 class WeatherTool(BaseTool[WeatherInput, WeatherOutput]):
@@ -71,14 +87,30 @@ class WeatherTool(BaseTool[WeatherInput, WeatherOutput]):
         stripped = city.strip()
         return CITY_NAME_MAP.get(stripped, stripped)
 
-    def _geocode_city(self, city: str) -> dict:
+    def _get_api_language(self, language: str) -> str:
+        """Map internal language code to Open-Meteo API language code."""
+        lang_map = {
+            "zh-TW": "zh",
+            "zh": "zh",
+            "en": "en",
+            "ja": "ja"
+        }
+        return lang_map.get(language, "zh")
+
+    def _get_localized_weather(self, weather_code: str, language: str) -> str:
+        """Get localized weather description."""
+        descriptions = WEATHER_DESCRIPTIONS.get(language, WEATHER_DESCRIPTIONS["zh-TW"])
+        return descriptions.get(weather_code, weather_code)
+
+    def _geocode_city(self, city: str, language: str = "zh-TW") -> dict:
         """Geocode a city name to latitude/longitude."""
         search_name = self._normalize_city_name(city)
+        api_lang = self._get_api_language(language)
 
         params = {
             "name": search_name,
             "count": 1,
-            "language": "zh",
+            "language": api_lang,
             "format": "json"
         }
 
@@ -107,7 +139,7 @@ class WeatherTool(BaseTool[WeatherInput, WeatherOutput]):
         except requests.exceptions.RequestException as e:
             return {"success": False, "error_type": "api_error", "message": f"Geocoding API request failed: {str(e)}"}
 
-    def _fetch_weather(self, latitude: float, longitude: float) -> dict:
+    def _fetch_weather(self, latitude: float, longitude: float, language: str = "zh-TW") -> dict:
         """Fetch weather data from Open-Meteo Forecast API."""
         params = {
             "latitude": latitude,
@@ -131,6 +163,7 @@ class WeatherTool(BaseTool[WeatherInput, WeatherOutput]):
 
             weather_code = current.get("weather_code")
             weather = WEATHER_CODE_MAP.get(weather_code, "unknown")
+            weather_description = self._get_localized_weather(weather, language)
 
             return {
                 "success": True,
@@ -138,6 +171,7 @@ class WeatherTool(BaseTool[WeatherInput, WeatherOutput]):
                 "precipitation_probability": current.get("precipitation_probability"),
                 "weather_code": weather_code,
                 "weather": weather,
+                "weather_description": weather_description,
                 "daily_precipitation_probability_max": daily.get("precipitation_probability_max", [None])[0]
             }
 
@@ -149,6 +183,7 @@ class WeatherTool(BaseTool[WeatherInput, WeatherOutput]):
     def execute(self, input: WeatherInput) -> ToolResult[WeatherOutput]:
         """Execute the weather tool."""
         city = input.city.strip()
+        language = input.language or "zh-TW"
         if not city:
             return ToolResult.fail(
                 error_type="invalid_input",
@@ -157,7 +192,7 @@ class WeatherTool(BaseTool[WeatherInput, WeatherOutput]):
             )
 
         # Geocode city
-        geocode_result = self._geocode_city(city)
+        geocode_result = self._geocode_city(city, language)
         if not geocode_result["success"]:
             return ToolResult.fail(
                 error_type=geocode_result["error_type"],
@@ -168,7 +203,8 @@ class WeatherTool(BaseTool[WeatherInput, WeatherOutput]):
         # Fetch weather
         weather_result = self._fetch_weather(
             geocode_result["latitude"],
-            geocode_result["longitude"]
+            geocode_result["longitude"],
+            language
         )
         if not weather_result["success"]:
             return ToolResult.fail(
@@ -187,17 +223,19 @@ class WeatherTool(BaseTool[WeatherInput, WeatherOutput]):
             daily_precipitation_probability_max=weather_result["daily_precipitation_probability_max"],
             weather_code=weather_result["weather_code"],
             weather=weather_result["weather"],
+            weather_description=weather_result["weather_description"],
             source="open-meteo",
+            language=language,
         )
 
         return ToolResult.ok(output)
 
 
 # Backward compatibility function
-def get_weather(city: str) -> dict:
+def get_weather(city: str, language: str = "zh-TW") -> dict:
     """Backward compatible function."""
     tool = WeatherTool()
-    result = tool(WeatherInput(city=city))
+    result = tool(WeatherInput(city=city, language=language))
     if result.success:
         data = result.data.model_dump()
         data["success"] = True
@@ -217,7 +255,7 @@ def _normalize_city_name(city: str) -> str:
     return CITY_NAME_MAP.get(stripped, stripped)
 
 
-def geocode_city(city: str) -> Dict[str, Any]:
+def geocode_city(city: str, language: str = "zh-TW") -> dict:
     """Geocode a city name to latitude/longitude using Open-Meteo Geocoding API."""
     tool = WeatherTool()
     if not city or not city.strip():
@@ -226,36 +264,10 @@ def geocode_city(city: str) -> Dict[str, Any]:
             "error_type": "invalid_input",
             "message": "City must not be empty"
         }
-    return tool._geocode_city(city)
+    return tool._geocode_city(city, language)
 
 
-def fetch_weather(latitude: float, longitude: float) -> Dict[str, Any]:
+def fetch_weather(latitude: float, longitude: float, language: str = "zh-TW") -> dict:
     """Fetch weather data from Open-Meteo Forecast API."""
     tool = WeatherTool()
-    return tool._fetch_weather(latitude, longitude)
-
-
-# Constants for backward compatibility
-WEATHER_CODE_MAP = {
-    0: "clear", 1: "clear", 2: "cloudy", 3: "cloudy", 45: "cloudy", 48: "cloudy",
-    51: "rain", 53: "rain", 55: "rain", 56: "rain", 57: "rain",
-    61: "rain", 63: "rain", 65: "rain", 66: "rain", 67: "rain",
-    71: "snow", 73: "snow", 75: "snow", 77: "snow",
-    80: "rain", 81: "rain", 82: "rain", 85: "snow", 86: "snow",
-    95: "thunderstorm", 96: "thunderstorm", 99: "thunderstorm",
-}
-
-CITY_NAME_MAP = {
-    "台東": "Taitung", "臺東": "Taitung", "台北": "Taipei", "臺北": "Taipei",
-    "台北市": "Taipei", "臺北市": "Taipei", "台中": "Taichung", "臺中": "Taichung",
-    "台中市": "Taichung", "臺中市": "Taichung", "台南": "Tainan", "臺南": "Tainan",
-    "台南市": "Tainan", "臺南市": "Tainan", "高雄": "Kaohsiung", "高雄市": "Kaohsiung",
-    "基隆": "Keelung", "基隆市": "Keelung", "新竹": "Hsinchu", "新竹市": "Hsinchu",
-    "新竹縣": "Hsinchu County", "桃園": "Taoyuan", "桃園市": "Taoyuan",
-    "苗栗": "Miaoli", "苗栗縣": "Miaoli", "彰化": "Changhua", "彰化縣": "Changhua",
-    "南投": "Nantou", "南投縣": "Nantou", "雲林": "Yunlin", "雲林縣": "Yunlin",
-    "嘉義": "Chiayi", "嘉義市": "Chiayi", "嘉義縣": "Chiayi", "屏東": "Pingtung",
-    "屏東縣": "Pingtung", "宜蘭": "Yilan", "宜蘭縣": "Yilan", "花蓮": "Hualien",
-    "花蓮縣": "Hualien", "澎湖": "Penghu", "澎湖縣": "Penghu", "金門": "Kinmen",
-    "金門縣": "Kinmen", "連江": "Lienchiang", "連江縣": "Lienchiang",
-}
+    return tool._fetch_weather(latitude, longitude, language)

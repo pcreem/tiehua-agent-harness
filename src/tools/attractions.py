@@ -45,6 +45,7 @@ class AttractionSearchInput(BaseModel):
     """Input schema for attraction search tool."""
     city: str = Field(..., description="City name (e.g., Taitung, Taipei, 台東, 台北)")
     category: str = Field("", description="Category: accommodation, activity, sightseeing, food, nature, service")
+    language: str = Field(default="zh-TW", description="Response language: zh-TW, en, ja")
 
 
 class AttractionResult(BaseModel):
@@ -73,6 +74,7 @@ class AttractionSearchOutput(BaseModel):
     count: int
     results: List[AttractionResult]
     source: str = "open-data-taitung"
+    language: str = "zh-TW"
     metadata: Dict[str, Any] = Field(default_factory=dict)
 
 
@@ -167,6 +169,7 @@ class AttractionsTool(BaseTool):
     def execute(self, input: AttractionSearchInput) -> ToolResult:
         """Execute the attraction search tool."""
         city = input.city.strip()
+        language = input.language or "zh-TW"
         if not city:
             return ToolResult.fail(
                 error_type="invalid_input",
@@ -251,6 +254,7 @@ class AttractionsTool(BaseTool):
             count=len(search_results),
             results=search_results,
             source="open-data-taitung",
+            language=language,
             metadata={
                 "dataset_total": len(attractions),
                 "dataset_source": dataset.get("metadata", {}).get("source", ""),
@@ -283,10 +287,10 @@ def _matches_category(attraction: Dict[str, Any], category: str) -> bool:
 
 
 # Backward compatibility function
-def search_attractions(city: str = "", category: str = "") -> dict:
+def search_attractions(city: str = "", category: str = "", language: str = "zh-TW") -> dict:
     """Backward compatible function."""
     tool = AttractionsTool()
-    result = tool(AttractionSearchInput(city=city, category=category))
+    result = tool(AttractionSearchInput(city=city, category=category, language=language))
     if result.success:
         data = result.data.model_dump()
         data["success"] = True
@@ -297,30 +301,3 @@ def search_attractions(city: str = "", category: str = "") -> dict:
             "error_type": result.error.type,
             "message": result.error.message,
         }
-
-
-# Constants for backward compatibility
-SUPPORTED_CATEGORIES = [
-    "sightseeing",
-    "food",
-    "accommodation",
-    "activity",
-    "nature",
-    "service",
-]
-
-SUPPORTED_CITIES = [
-    "Taitung",
-    "Tainan",
-    "Taipei",
-    "Kaohsiung",
-]
-
-CITY_NAME_MAP = {
-    "台東": "Taitung", "臺東": "Taitung", "台北": "Taipei", "臺北": "Taipei",
-    "台中": "Taichung", "臺中": "Taichung", "台南": "Tainan", "臺南": "Tainan",
-    "高雄": "Kaohsiung", "基隆": "Keelung", "新竹": "Hsinchu", "桃園": "Taoyuan",
-    "苗栗": "Miaoli", "彰化": "Changhua", "南投": "Nantou", "雲林": "Yunlin",
-    "嘉義": "Chiayi", "屏東": "Pingtung", "宜蘭": "Yilan", "花蓮": "Hualien",
-    "澎湖": "Penghu", "金門": "Kinmen", "連江": "Lienchiang",
-}
