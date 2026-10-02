@@ -36,6 +36,7 @@ class AgentCore:
         max_tool_calls: int = 5,
         temperature: float = 0.3,
         llm_client=None,
+        prompt_manager=None,  # Lazy import to avoid circular dependency
     ):
         self.max_tool_calls = max_tool_calls
         self.temperature = temperature
@@ -76,12 +77,55 @@ class AgentCore:
         )
         self.message_formatter = MessageFormatter()
 
-        # System prompt
-        self.system_prompt = """你是鐵花觀光代理人，協助使用者規劃台東旅遊。
+        # Prompt Manager (lazy initialization to avoid circular import)
+        self._prompt_manager = prompt_manager
+        self._prompt_manager_class = None
 
-可用工具：
-1. get_weather(city) - 查詢即時天氣
-2. search_attractions(city, category) - 搜尋景點/住宿/活動
+        # Default role (can be overridden via state.metadata["role"])
+        self.default_role = "local_guide"
+        self.default_output_format = "markdown_output"
+
+    @property
+    def prompt_manager(self):
+        """Lazy-load PromptManager to avoid circular imports."""
+        if self._prompt_manager is None:
+            if self._prompt_manager_class is None:
+                from src.harness.prompt_manager import PromptManager
+                self._prompt_manager_class = PromptManager
+            self._prompt_manager = self._prompt_manager_class()
+        return self._prompt_manager
+
+    def _get_tool_schemas(self) -> List[Dict]:
+        """Get tool schemas for LLM function calling."""
+        from src.tools import get_tool_registry
+        return get_tool_registry().get_schemas_dict()
+
+    def _build_system_prompt(self, state: AgentState) -> str:
+        """Build system prompt dynamically using PromptManager."""
+        # Ensure state has required metadata for prompt composition
+        if "role" not in state.metadata:
+            state.metadata["role"] = self.default_role
+        if "output_format" not in state.metadata:
+            state.metadata["output_format"] = self.default_output_format
+
+        # Compose system prompt from modules
+        system_prompt = self.prompt_manager.compose_system_prompt(state)
+
+        # Append tool usage instructions (dynamic based on available tools)
+        tool_instructions = self._build_tool_instructions()
+        system_prompt += f"\n\n{tool_instructions}"
+
+        return system_prompt
+
+    def _build_tool_instructions(self) -> str:
+        """Build tool usage instructions."""
+        tool_descriptions = []
+        for tool in self.tools:
+            tool_descriptions.append(f"- {tool.name}({self._format_tool_params(tool)}) - {tool.description}")
+        tools_text = "\n".join(tool_descriptions)
+
+        return f"""可用工具：
+{tools_text}
 
 原則：
 - 使用者詢問天氣 → 呼叫 get_weather
@@ -89,12 +133,22 @@ class AgentCore:
 - 使用者同時詢問天氣和景點 → 先查天氣，再根據天氣決定搜尋策略
 - 工具回傳結構化資料，你需整理成自然語言回答
 - 不要編造工具沒有的資訊
-- 回答用繁體中文"""
+- 回答語言跟隨使用者查詢語言（state.language）"""
 
-    def _get_tool_schemas(self) -> List[Dict]:
-        """Get tool schemas for LLM function calling."""
-        from src.tools import get_tool_registry
-        return get_tool_registry().get_schemas_dict()
+    def _format_tool_params(self, tool) -> str:
+        """Format tool parameters for prompt."""
+        if hasattr(tool, 'input_schema'):
+            schema = tool.input_schema.model_json_schema()
+            props = schema.get('properties', {})
+            required = schema.get('required', [])
+            params = []
+            for name, prop in props.items():
+                param_type = prop.get('type', 'string')
+                desc = prop.get('description', '')
+                req = " (required)" if name in required else ""
+                params.append(f"{name}: {param_type}{req}")
+            return ", ".join(params)
+        return ""
 
     def run(self, user_query: str) -> Dict[str, Any]:
         """Run agent with user query, return final answer and state."""
@@ -134,7 +188,7 @@ class AgentCore:
         tool_call_count = 0
 
         while tool_call_count < self.max_tool_calls:
-            # Prepare messages for LLM
+            # Prepare messages for LLM (with dynamic system prompt)
             openai_messages = self._prepare_messages(state)
 
             # Prepare tools for LLM
@@ -163,6 +217,10 @@ class AgentCore:
                 name = tool_call.function.name
                 args = json.loads(tool_call.function.arguments)
 
+                # Inject language from state into tool arguments
+                if "language" not in args and state.language:
+                    args["language"] = state.language
+
                 # Safety check
                 tool_safety = self._safety_pipeline.check_tool_args(name, args)
                 if not tool_safety.passed and tool_safety.action == "block":
@@ -187,10 +245,20 @@ class AgentCore:
         return state
 
     def _prepare_messages(self, state):
-        """Convert state messages to OpenAI format."""
+        """Convert state messages to OpenAI format with dynamic system prompt."""
         from src.agent_core.message_formatter import MessageFormatter
         formatter = MessageFormatter()
-        return formatter.to_openai_format(state.messages)
+
+        # Build dynamic system prompt
+        system_prompt = self._build_system_prompt(state)
+
+        # Get existing messages (excluding any old system prompt)
+        messages = [msg for msg in state.messages if msg.get("role") != "system"]
+
+        # Prepend new system prompt
+        messages = [{"role": "system", "content": system_prompt}] + messages
+
+        return formatter.to_openai_format(messages)
 
     def _get_tool_schemas(self) -> List[Dict]:
         from src.tools import get_tool_registry
@@ -205,7 +273,7 @@ class AgentCore:
                 response = self.llm_client.complete(
                     messages=messages,
                     tools=tools,
-                    temperature=0.3,
+                    temperature=self.temperature,
                 )
                 return response
             except Exception as e:

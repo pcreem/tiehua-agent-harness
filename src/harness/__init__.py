@@ -14,6 +14,7 @@ from .graph import (
 from .graph_types import HarnessGraphState as GraphStateType
 from .language_detector import LanguageDetector, create_language_detector_node
 from .intent_classifier import IntentClassifier, create_intent_classifier_node
+from .prompt_manager import PromptManager, create_prompt_manager
 
 __all__ = [
     "HarnessRunner",
@@ -31,4 +32,6 @@ __all__ = [
     "create_language_detector_node",
     "IntentClassifier",
     "create_intent_classifier_node",
+    "PromptManager",
+    "create_prompt_manager",
 ]
