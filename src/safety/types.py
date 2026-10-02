@@ -21,6 +21,7 @@ class SafetyAction(str, Enum):
     BLOCK = "block"
     SANITIZE = "sanitize"
     REDACT = "redact"
+    REVIEW = "review"
 
 
 class PipelineMode(str, Enum):
@@ -61,6 +62,20 @@ class PipelineResult:
 
     def has_blocking_violations(self) -> bool:
         return any(v.suggested_action == "block" for v in self.violations)
+
+
+@dataclass
+class RiskAssessment:
+    """Complete risk assessment result."""
+    text: str
+    channel: str
+    normalized_text: str
+    signals: List = field(default_factory=list)
+    risk_score: float = 0.0
+    max_signal_weight: float = 0.0
+    educational_context: bool = False
+    action: SafetyAction = SafetyAction.ALLOW
+    is_critical: bool = False
 
 
 @dataclass

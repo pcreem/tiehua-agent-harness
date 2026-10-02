@@ -2,6 +2,7 @@
 
 from typing import Optional, Callable
 import time
+import logging
 
 from src.state import AgentState, initialize_state
 from src.harness.loop import HarnessLoop

@@ -3,11 +3,19 @@
 import re
 from typing import List, Optional, Dict, Any
 
-try:
-    from detoxify import Detoxify
-    DETOXIFY_AVAILABLE = True
-except ImportError:
-    DETOXIFY_AVAILABLE = False
+# Lazy import - only load when actually needed
+DETOXIFY_AVAILABLE = True
+_DETOXIFY_MODEL = None
+
+
+def _get_detoxify_model():
+    """Lazy load the detoxify model."""
+    global _DETOXIFY_MODEL
+    if _DETOXIFY_MODEL is None:
+        from detoxify import Detoxify
+        _DETOXIFY_MODEL = Detoxify('multilingual')
+    return _DETOXIFY_MODEL
+
 
 from .types import (
     SafetyCheckResult,
@@ -59,12 +67,7 @@ class ContentFilter:
     ):
         self.toxicity_threshold = toxicity_threshold
         self.use_detoxify = use_detoxify and DETOXIFY_AVAILABLE
-
-        if self.use_detoxify:
-            # Load multilingual model for Chinese support
-            self.detoxify = Detoxify('multilingual')
-        else:
-            self.detoxify = None
+        self._detoxify_model = None
 
         # Custom rules
         self.custom_rules = custom_rules or {}
@@ -80,15 +83,24 @@ class ContentFilter:
                 [re.compile(p, re.IGNORECASE) for p in patterns]
             )
 
+    def _get_detoxify_model(self):
+        """Lazy load the detoxify model."""
+        global _DETOXIFY_MODEL
+        if _DETOXIFY_MODEL is None:
+            from detoxify import Detoxify
+            _DETOXIFY_MODEL = Detoxify('multilingual')
+        return _DETOXIFY_MODEL
+
     def check(self, text: str, location: str = "input") -> 'SafetyCheckResult':
         """Check text for toxic/harmful content."""
         from .types import SafetyCheckResult, SafetyViolation, SafetyViolationType, SafetyAction
 
         result = SafetyCheckResult(passed=True)
 
-        # Detoxify analysis
-        if self.detoxify:
-            scores = self.detoxify.predict(text)
+        # Detoxify analysis (lazy load)
+        if self.use_detoxify:
+            detoxify = self._get_detoxify_model()
+            scores = detoxify.predict(text)
             for category, score in scores.items():
                 if score >= self.toxicity_threshold:
                     violation = SafetyViolation(
@@ -131,7 +143,7 @@ class ContentFilter:
 
 
 # Default instances
-_default_filter: Optional['ContentFilter'] = None
+_default_filter = None
 
 
 def get_content_filter() -> 'ContentFilter':

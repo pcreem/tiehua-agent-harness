@@ -71,7 +71,7 @@ class GuardrailsPipeline:
         self.config = config or PipelineConfig()
         self.prompt_injection_detector = prompt_injection_detector or create_prompt_injection_detector()
         self.pii_detector = pii_detector or create_pii_detector()
-        self.content_filter = content_filter or create_content_filter()
+        self.content_filter = content_filter or create_content_filter(use_detoxify=False)
         self.tool_guard = tool_guard or create_tool_guard()
 
         # Metrics
@@ -91,7 +91,7 @@ class GuardrailsPipeline:
             if pi_result.violations:
                 result.metadata["prompt_injection"] = {
                     "violations": len(pi_result.violations),
-                    "blocked": pi_result.has_blocking_violations(),
+                    "blocked": len(pi_result.get_blocking_violations()) > 0,
                 }
 
         # 2. PII Detection
@@ -100,7 +100,7 @@ class GuardrailsPipeline:
             result.add_violations(pii_result.violations)
             result.metadata["pii"] = {
                 "violations": len(pii_result.violations),
-                "blocked": pii_result.has_blocking_violations(),
+                "blocked": len(pii_result.get_blocking_violations()) > 0,
             }
 
             # Redact PII if enabled
@@ -113,7 +113,7 @@ class GuardrailsPipeline:
             result.add_violations(cf_result.violations)
             result.metadata["content_filter"] = {
                 "violations": len(cf_result.violations),
-                "blocked": cf_result.has_blocking_violations(),
+                "blocked": len(cf_result.get_blocking_violations()) > 0,
             }
 
         # Determine final action
@@ -155,7 +155,7 @@ class GuardrailsPipeline:
             result.metadata["tool_guard"] = {
                 "tool": tool_name,
                 "violations": len(tg_result.violations),
-                "blocked": tg_result.has_blocking_violations(),
+                "blocked": len(tg_result.get_blocking_violations()) > 0,
             }
 
             # Sanitize if violations
