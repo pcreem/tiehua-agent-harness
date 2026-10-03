@@ -284,11 +284,12 @@ class HarnessGraphRunner:
         )
         self.thread_id = thread_id or f"run_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
 
-    def run(self, query: str, config: Optional[dict] = None) -> AgentState:
+    def run(self, query: str, config: Optional[dict] = None, max_retries: Optional[int] = None) -> AgentState:
         """Execute the harness graph with a query."""
         from src.state import initialize_state
 
-        initial_state = initialize_state(query, max_retries=2)
+        initial_state = initialize_state(query, max_retries=max_retries if max_retries is not None else 2)
+        initial_state.add_message("user", query)
 
         graph_config = {"configurable": {"thread_id": self.thread_id}}
         if config:
@@ -313,6 +314,7 @@ class HarnessGraphRunner:
         from src.state import initialize_state
 
         initial_state = initialize_state(query, max_retries=2)
+        initial_state.add_message("user", query)
         graph_config = {"configurable": {"thread_id": self.thread_id}}
 
         for step in self.graph.stream(

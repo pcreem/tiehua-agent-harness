@@ -27,7 +27,7 @@ class ToolExecutor:
         return self._safety_pipeline
 
     def execute(self, name: str, args: Dict[str, Any]) -> Dict[str, Any]:
-        """Execute a tool by name with arguments."""
+        """Execute a tool by name with arguments and return a plain dict."""
         tool = self._tool_map.get(name)
         if not tool:
             return {
@@ -47,40 +47,43 @@ class ToolExecutor:
                 "message": f"工具參數安全檢查失敗: {'; '.join(v.message for v in tool_safety.violations)}",
             }
 
-        # Execute tool with observability
+        metrics = get_metrics()
         start_time = time.time()
-        from src.observability import trace_tool_call, get_metrics
-        from opentelemetry.trace import Status, StatusCode
-        from opentelemetry.trace import get_current_span
 
-        metrics = get_metrics()
-        tool = self._tool_map.get(name)
+        with trace_tool_call(name, args):
+            try:
+                input_obj = tool.validate_input(args)
+                tool_result = tool.execute(input_obj)
+            except Exception as e:
+                duration = time.time() - start_time
+                metrics.record_tool_call(name, False, duration)
+                return {
+                    "success": False,
+                    "error_type": "tool_execution_failed",
+                    "message": f"Tool execution failed: {str(e)}",
+                }
 
-        try:
-            # Validate and execute
-            input_obj = tool.validate_input(args)
-            result = tool.execute(input_obj)
-            success = result.success
-        except Exception as e:
-            result = {
-                "success": False,
-                "error_type": "tool_execution_failed",
-                "message": f"Tool execution failed: {str(e)}",
-            }
-        else:
-            # No exception
-            if hasattr(result, 'success') and result.success:
-                success = True
-            else:
-                success = False
-
-        # Record metrics
         duration = time.time() - start_time
-        success = result.get("success", False)
-        metrics = get_metrics()
-        metrics.record_tool_call(name, success, time.time() - time.time() + start_time)  # Fixed
 
-        return result
+        # Normalize ToolResult into a plain dict payload
+        if isinstance(tool_result, ToolResult):
+            if tool_result.success and tool_result.data is not None:
+                payload = tool_result.data.model_dump()
+                payload["success"] = True
+                metrics.record_tool_call(name, True, duration)
+                return payload
+
+            error = tool_result.error
+            metrics.record_tool_call(name, False, duration)
+            return {
+                "success": False,
+                "error_type": error.type if error else "tool_execution_failed",
+                "message": error.message if error else "Tool execution failed",
+                "retryable": error.retryable if error else False,
+            }
+
+        metrics.record_tool_call(name, True, duration)
+        return tool_result if isinstance(tool_result, dict) else {"success": True, "result": str(tool_result)}
 
     def get_tool_schemas(self) -> List[Dict]:
         """Get tool schemas for LLM function calling."""

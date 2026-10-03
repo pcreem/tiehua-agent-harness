@@ -222,7 +222,7 @@ class AgentCore:
                     args["language"] = state.language
 
                 # Safety check
-                tool_safety = self._safety_pipeline.check_tool_args(name, args)
+                tool_safety = self.safety_pipeline.check_tool_args(name, args)
                 if not tool_safety.passed and tool_safety.action == "block":
                     result = {
                         "success": False,
@@ -266,7 +266,6 @@ class AgentCore:
 
     def _call_llm(self, messages, tools):
         from src.observability import trace_llm_call
-        from src.observability import get_metrics
 
         with trace_llm_call(self.model) as span:
             try:
@@ -278,35 +277,6 @@ class AgentCore:
                 return response
             except Exception as e:
                 raise RuntimeError(f"LLM API 呼叫失敗: {e}")
-
-    def _execute_tool(self, name: str, args: Dict[str, Any]) -> Dict[str, Any]:
-        """Execute a tool by name with arguments"""
-        from src.tools.base import BaseTool
-        tool = getattr(self, '_tool_map', {}).get(name)
-        if not tool:
-            return {
-                "success": False,
-                "error_type": "unknown_tool",
-                "message": f"Unknown tool: {name}"
-            }
-
-        try:
-            input_obj = tool.validate_input(args)
-            result = tool.execute(input_obj)
-            if result.success:
-                return result.data.model_dump()
-            else:
-                return {
-                    "success": False,
-                    "error_type": result.error.type,
-                    "message": result.error.message,
-                }
-        except Exception as e:
-            return {
-                "success": False,
-                "error_type": "tool_execution_failed",
-                "message": f"Tool execution failed: {str(e)}",
-            }
 
     def _format_tool_calls(self, tool_calls) -> List[Dict]:
         from src.agent_core.message_formatter import MessageFormatter
@@ -324,9 +294,7 @@ class AgentCore:
         return tool_calls_data
 
     def _execute_tool(self, name: str, args: Dict[str, Any]) -> Dict[str, Any]:
-        from src.agent_core.tool_executor import ToolExecutor
-        tool_executor = self._tool_executor
-        return tool_executor.execute(name, args)
+        return self._tool_executor.execute(name, args)
 
     def _get_safety_pipeline(self):
         from src.safety import get_guardrails_pipeline

@@ -103,7 +103,7 @@ class HarnessRunner:
             max_retries=self.max_retries,
             thread_id=state.run_id,
         )
-        return graph_runner.run(state.query)
+        return graph_runner.run(state.query, max_retries=self.max_retries)
 
     def _run_with_loop(self, agent, state: AgentState) -> AgentState:
         """Execute using legacy HarnessLoop."""
