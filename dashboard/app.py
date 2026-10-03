@@ -382,7 +382,7 @@ def render_timeline_tab(data: Dict[str, Any]):
         }
         
         st.dataframe(
-            df.style.format({"Score": "{:.2f}"}).applymap(
+            df.style.format({"Score": "{:.2f}"}).map(
                 lambda x: f"color: {status_colors.get(x, 'black')}" if x in status_colors else "",
                 subset=["Status"]
             ),
