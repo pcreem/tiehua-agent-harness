@@ -36,6 +36,7 @@ class AgentCore:
         max_tool_calls: int = 5,
         temperature: float = 0.3,
         llm_client=None,
+        fallback_models: Optional[List[str]] = None,
         prompt_manager=None,  # Lazy import to avoid circular dependency
     ):
         self.max_tool_calls = max_tool_calls
@@ -46,14 +47,15 @@ class AgentCore:
         if not self.api_key:
             raise ValueError("OPENROUTER_API_KEY not set")
 
-        # Use provided LLM client or create default OpenRouter client
+        # Use provided LLM client or create default OpenRouter client with fallback
         self.llm_client = llm_client
         if self.llm_client is None:
-            # Use LLMClient wrapper for consistent interface
+            from src.agent_core.llm_client import LLMClient
             self.llm_client = LLMClient(
                 api_key=self.api_key,
                 base_url=base_url,
                 model=model,
+                fallback_models=fallback_models,
                 timeout=30.0,
             )
 
@@ -265,7 +267,10 @@ class AgentCore:
         return get_tool_registry().get_schemas_dict()
 
     def _call_llm(self, messages, tools):
-        from src.observability import trace_llm_call
+        from src.observability import trace_llm_call, get_logger
+        from src.agent_core.llm_client import ModelExhaustedError
+
+        logger = get_logger(__name__)
 
         with trace_llm_call(self.model) as span:
             try:
@@ -275,6 +280,18 @@ class AgentCore:
                     temperature=self.temperature,
                 )
                 return response
+            except ModelExhaustedError as e:
+                # All models exhausted - return a fallback response
+                logger.error("all_models_exhausted", tried_models=e.tried_models)
+                from types import SimpleNamespace
+                class MockChoice:
+                    class MockMessage:
+                        content = "抱歉，目前所有 AI 模型都已達到使用限制，無法處理您的請求。請稍後再試或聯繫管理員。"
+                        tool_calls = None
+                    message = MockMessage()
+                class MockResponse:
+                    choices = [MockChoice()]
+                return MockResponse()
             except Exception as e:
                 raise RuntimeError(f"LLM API 呼叫失敗: {e}")
 

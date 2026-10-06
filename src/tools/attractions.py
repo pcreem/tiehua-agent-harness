@@ -15,29 +15,92 @@ from src.tools.base import BaseTool, ToolResult
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 DATASET_PATH = BASE_DIR / "data" / "processed" / "attractions.json"
 
+# Categories from merged official data (schema v2)
 SUPPORTED_CATEGORIES = [
     "sightseeing",
-    "food",
-    "accommodation",
     "activity",
     "nature",
     "service",
+    "accommodation",
+    "food",
 ]
 
+# All 22 cities/counties from official data
 SUPPORTED_CITIES = [
-    "Taitung",
-    "Tainan",
-    "Taipei",
-    "Kaohsiung",
+    "新北市", "臺北市", "桃園市", "臺中市", "臺南市", "高雄市",
+    "基隆市", "新竹市", "新竹縣", "苗栗縣", "彰化縣", "南投縣",
+    "雲林縣", "嘉義市", "嘉義縣", "屏東縣", "宜蘭縣", "花蓮縣",
+    "臺東縣", "澎湖縣", "金門縣", "連江縣",
+]
+
+# English city names for API compatibility
+SUPPORTED_CITIES_EN = [
+    "NewTaipei", "Taipei", "Taoyuan", "Taichung", "Tainan", "Kaohsiung",
+    "Keelung", "Hsinchu", "HsinchuCounty", "Miaoli", "Changhua", "Nantou",
+    "Yunlin", "Chiayi", "ChiayiCounty", "Pingtung", "Yilan", "Hualien",
+    "Taitung", "Penghu", "Kinmen", "Lienchiang",
 ]
 
 CITY_NAME_MAP = {
-    "台東": "Taitung", "臺東": "Taitung", "台北": "Taipei", "臺北": "Taipei",
-    "台中": "Taichung", "臺中": "Taichung", "台南": "Tainan", "臺南": "Tainan",
-    "高雄": "Kaohsiung", "基隆": "Keelung", "新竹": "Hsinchu", "桃園": "Taoyuan",
-    "苗栗": "Miaoli", "彰化": "Changhua", "南投": "Nantou", "雲林": "Yunlin",
-    "嘉義": "Chiayi", "屏東": "Pingtung", "宜蘭": "Yilan", "花蓮": "Hualien",
-    "澎湖": "Penghu", "金門": "Kinmen", "連江": "Lienchiang",
+    # Chinese variants -> Standard Chinese
+    "台東": "臺東縣", "臺東": "臺東縣",
+    "台北": "臺北市", "臺北": "臺北市",
+    "台中": "臺中市", "臺中": "臺中市",
+    "台南": "臺南市", "臺南": "臺南市",
+    "高雄": "高雄市",
+    "基隆": "基隆市",
+    "新竹": "新竹市",
+    "桃園": "桃園市",
+    "苗栗": "苗栗縣",
+    "彰化": "彰化縣",
+    "南投": "南投縣",
+    "雲林": "雲林縣",
+    "嘉義": "嘉義市",
+    "屏東": "屏東縣",
+    "宜蘭": "宜蘭縣",
+    "花蓮": "花蓮縣",
+    "澎湖": "澎湖縣",
+    "金門": "金門縣",
+    "連江": "連江縣",
+    # English -> Standard Chinese
+    "NewTaipei": "新北市", "Taipei": "臺北市", "Taoyuan": "桃園市",
+    "Taichung": "臺中市", "Tainan": "臺南市", "Kaohsiung": "高雄市",
+    "Keelung": "基隆市", "Hsinchu": "新竹市", "HsinchuCounty": "新竹縣",
+    "Miaoli": "苗栗縣", "Changhua": "彰化縣", "Nantou": "南投縣",
+    "Yunlin": "雲林縣", "Chiayi": "嘉義市", "ChiayiCounty": "嘉義縣",
+    "Pingtung": "屏東縣", "Yilan": "宜蘭縣", "Hualien": "花蓮縣",
+    "Taitung": "臺東縣", "Penghu": "澎湖縣", "Kinmen": "金門縣", "Lienchiang": "連江縣",
+}
+
+CITY_NAME_MAP = {
+    # Chinese variants -> Standard Chinese
+    "台東": "臺東縣", "臺東": "臺東縣",
+    "台北": "臺北市", "臺北": "臺北市",
+    "台中": "臺中市", "臺中": "臺中市",
+    "台南": "臺南市", "臺南": "臺南市",
+    "高雄": "高雄市",
+    "基隆": "基隆市",
+    "新竹": "新竹市",
+    "桃園": "桃園市",
+    "苗栗": "苗栗縣",
+    "彰化": "彰化縣",
+    "南投": "南投縣",
+    "雲林": "雲林縣",
+    "嘉義": "嘉義市",
+    "屏東": "屏東縣",
+    "宜蘭": "宜蘭縣",
+    "花蓮": "花蓮縣",
+    "澎湖": "澎湖縣",
+    "金門": "金門縣",
+    "連江": "連江縣",
+    # English -> Standard Chinese
+    "NewTaipei": "新北市", "Taipei": "臺北市", "Taoyuan": "桃園市",
+    "Taichung": "臺中市", "Tainan": "臺南市", "Kaohsiung": "高雄市",
+    "Keelung": "基隆市", "Hsinchu": "新竹市", "HsinchuCounty": "新竹縣",
+    "Miaoli": "苗栗縣", "Changhua": "彰化縣", "Nantou": "南投縣",
+    "Yunlin": "雲林縣", "Chiayi": "嘉義市", "ChiayiCounty": "嘉義縣",
+    "Pingtung": "屏東縣", "Yilan": "宜蘭縣", "Hualien": "花蓮縣",
+    "Taitung": "臺東縣", "Penghu": "澎湖縣", "Kinmen": "金門縣", "Lienchiang": "連江縣",
 }
 
 
@@ -104,17 +167,23 @@ class AttractionsTool(BaseTool):
         return self._dataset_cache
 
     def _normalize_city(self, city: str) -> str:
-        """Normalize city name (handle 台/臺 variants)."""
-        normalized = city.strip().replace("臺", "台")
+        """Normalize city name to standard Chinese (e.g., 台東 -> 臺東縣)."""
+        normalized = city.strip()
+        # Handle English names
+        if normalized in CITY_NAME_MAP:
+            return CITY_NAME_MAP[normalized]
+        # Handle 台/臺 variants
+        normalized = normalized.replace("台", "臺")
+        if normalized in CITY_NAME_MAP:
+            return CITY_NAME_MAP[normalized]
+        # Already standard?
+        if normalized in SUPPORTED_CITIES:
+            return normalized
+        # Try partial match
+        for standard in SUPPORTED_CITIES:
+            if normalized in standard or standard in normalized:
+                return standard
         return normalized
-
-    def _build_reverse_city_map(self) -> Dict[str, str]:
-        """Build English -> Chinese city mapping (first occurrence wins)."""
-        reverse_map: Dict[str, str] = {}
-        for chinese_name, english_name in CITY_NAME_MAP.items():
-            if english_name not in reverse_map:
-                reverse_map[english_name] = self._normalize_city(chinese_name)
-        return reverse_map
 
     def _matches_city(self, attraction: Dict[str, Any], city: str) -> bool:
         """Check if attraction matches the given city."""
@@ -122,31 +191,20 @@ class AttractionsTool(BaseTool):
             return False
 
         search_city = self._normalize_city(city)
-        attraction_city = self._normalize_city(attraction["city"])
-        attraction_district = self._normalize_city(attraction.get("district", ""))
+        attraction_city = attraction["city"]  # Already standard Chinese
+        attraction_district = attraction.get("district", "")
 
-        # Check against city field
+        # Direct match
         if search_city == attraction_city:
             return True
         if search_city in attraction_city or attraction_city in search_city:
             return True
 
-        # Check against district field (e.g., "台東市" matches district "臺東市")
-        if attraction_district and (search_city == attraction_district or search_city in attraction_district or attraction_district in search_city):
-            return True
-
-        # Map English city name to Chinese for comparison
-        if search_city in self._build_reverse_city_map():
-            chinese_name = self._build_reverse_city_map()[search_city]
-            if chinese_name in attraction_city or attraction_city in chinese_name:
+        # Match against district
+        if attraction_district:
+            if search_city == attraction_district:
                 return True
-            if attraction_district and (chinese_name in attraction_district or attraction_district in chinese_name):
-                return True
-
-        # Map Chinese city name to English for comparison (reverse lookup)
-        if search_city in CITY_NAME_MAP:
-            english_name = CITY_NAME_MAP[search_city]
-            if english_name == attraction_city:
+            if search_city in attraction_district or attraction_district in search_city:
                 return True
 
         return False
@@ -160,8 +218,8 @@ class AttractionsTool(BaseTool):
             return True
 
         # Also check tags
-        tags = attraction.get("tags", [])
-        if search_category in [tag.lower() for tag in tags]:
+        tags = [tag.lower() for tag in attraction.get("tags", [])]
+        if search_category in tags:
             return True
 
         return False
@@ -253,14 +311,14 @@ class AttractionsTool(BaseTool):
             category=input.category if input.category else None,
             count=len(search_results),
             results=search_results,
-            source="open-data-taitung",
+            source="taiwan-tourism-bureau",
             language=language,
             metadata={
                 "dataset_total": len(attractions),
-                "dataset_source": dataset.get("metadata", {}).get("source", ""),
-                "dataset_url": dataset.get("metadata", {}).get("source_url", ""),
-                "dataset_last_updated": dataset.get("metadata", {}).get("last_updated", ""),
-                "filter_district": dataset.get("metadata", {}).get("filter_district", ""),
+                "dataset_source": dataset.get("metadata", {}).get("source", "交通部觀光署開放資料"),
+                "dataset_url": dataset.get("metadata", {}).get("source_url", "https://admin.taiwan.net.tw/"),
+                "dataset_last_updated": dataset.get("metadata", {}).get("last_updated", dataset.get("metadata", {}).get("upstream_update_time", "")),
+                "provider_id": dataset.get("metadata", {}).get("provider_id", "A15010000H"),
             }
         )
 
@@ -269,8 +327,22 @@ class AttractionsTool(BaseTool):
 
 # Helper functions for backward compatibility
 def _normalize_city(city: str) -> str:
-    """Normalize city name (handle 台/臺 variants)."""
-    normalized = city.strip().replace("臺", "台")
+    """Normalize city name to standard Chinese (e.g., 台東 -> 臺東縣)."""
+    normalized = city.strip()
+    # Handle English names
+    if normalized in CITY_NAME_MAP:
+        return CITY_NAME_MAP[normalized]
+    # Handle 台/臺 variants
+    normalized = normalized.replace("台", "臺")
+    if normalized in CITY_NAME_MAP:
+        return CITY_NAME_MAP[normalized]
+    # Already standard?
+    if normalized in SUPPORTED_CITIES:
+        return normalized
+    # Try partial match
+    for standard in SUPPORTED_CITIES:
+        if normalized in standard or standard in normalized:
+            return standard
     return normalized
 
 
