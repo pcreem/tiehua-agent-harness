@@ -1,4 +1,4 @@
-"""Tiehua Tourism Agent Harness - FastAPI Entry Point"""
+"""Taiwan Tourism Agent Harness - FastAPI Entry Point"""
 
 import os
 from contextlib import asynccontextmanager
@@ -57,7 +57,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Tiehua Tourism Agent Harness",
+    title="Taiwan Tourism Agent Harness",
     description="A Tool-Using Tourism Agent with Evaluation, Structured Feedback and Stateful Retry",
     version="1.0.0",
     lifespan=lifespan,
@@ -67,7 +67,7 @@ app = FastAPI(
 @app.get("/health")
 async def health_check():
     """Liveness probe - process is alive."""
-    return {"status": "healthy", "service": "tiehua-api"}
+    return {"status": "healthy", "service": "taiwan-tourism-api"}
 
 
 @app.get("/ready")
@@ -83,7 +83,7 @@ async def readiness_check():
     
     return {
         "status": "ready",
-        "service": "tiehua-api",
+        "service": "taiwan-tourism-api",
         "checks": {
             "runner": "ok",
             "api_key": "configured",

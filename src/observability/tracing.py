@@ -19,7 +19,7 @@ _tracer_provider: Optional[TracerProvider] = None
 
 
 def init_tracing(
-    service_name: str = "tiehua-agent-harness",
+    service_name: str = "taiwan-tourism-agent-harness",
     otlp_endpoint: Optional[str] = None,
     enable_console: bool = False,
     auto_instrument: bool = True,
@@ -56,7 +56,7 @@ def init_tracing(
     return _tracer_provider
 
 
-def get_tracer(name: str = "tiehua-agent-harness") -> trace.Tracer:
+def get_tracer(name: str = "taiwan-tourism-agent-harness") -> trace.Tracer:
     """Get a tracer instance."""
     return trace.get_tracer(name)
 

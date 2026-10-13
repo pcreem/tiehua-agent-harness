@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Tiehua Tourism Agent - Evaluation Dashboard
+Taiwan Tourism Agent - Evaluation Dashboard
 Hugging Face Space Entry Point
 """
 

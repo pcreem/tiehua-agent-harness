@@ -123,7 +123,7 @@ class TestAgentRun:
 
     def test_simple_query_no_tools(self):
         """Test query that doesn't need tools"""
-        mock_msg = MockMessage(content="您好！我是鐵花觀光代理人。有什麼可以幫您？")
+        mock_msg = MockMessage(content="您好！我是台灣觀光代理人。有什麼可以幫您？")
         mock_choice = MockChoice(mock_msg)
         mock_response = MockChatCompletion([mock_choice])
 
@@ -395,4 +395,4 @@ class TestToolCallTracking:
             call_args = mock_client.chat.completions.create.call_args_list[0]
             messages = call_args[1]["messages"]
             assert messages[0]["role"] == "system"
-            assert "鐵花觀光代理人" in messages[0]["content"]
+            assert "台灣觀光代理人" in messages[0]["content"]

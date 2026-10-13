@@ -83,7 +83,7 @@ class LLMJudge:
         """Default judge prompt."""
         return """# Role
 
-You are the quality judge for Tiehua Tourism Agent Harness.
+You are the quality judge for Taiwan Tourism Agent Harness.
 
 Your task is to evaluate whether an agent execution satisfies the
 provided expected behavior and whether the final answer is grounded

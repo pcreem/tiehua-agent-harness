@@ -1,7 +1,7 @@
-# Tiehua Tourism Agent - Evaluation Dashboard
+# Taiwan Tourism Agent - Evaluation Dashboard
 # Hugging Face Space Deployment
 
-This Space deploys the Tiehua Tourism Agent Evaluation Dashboard as a Streamlit app.
+This Space deploys the Taiwan Tourism Agent Evaluation Dashboard as a Streamlit app.
 
 ## Setup
 

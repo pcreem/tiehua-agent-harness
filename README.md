@@ -1,4 +1,4 @@
-# 🌿 Tiehua Tourism Agent Harness
+# 🌿 Taiwan Tourism Agent Harness
 
 ### A Tool-Using Tourism Agent with Evaluation and Stateful Retry
 
@@ -6,7 +6,7 @@
 
 ## 🎯 Project
 
-Tiehua Tourism Agent Harness 是一個以 **Harness Engineering** 為核心的旅遊 AI Agent。
+Taiwan Tourism Agent Harness 是一個以 **Harness Engineering** 為核心的旅遊 AI Agent。
 
 與一般 Chatbot 不同，本專案讓 Agent 能夠：
 

@@ -24,8 +24,7 @@ class Evaluator:
         "景點", "玩", "去哪", "推薦", "好玩",
         "活動", "夜市", "美食", "餐廳", "小吃", "宵夜",
         "好吃", "吃", "美食",
-        "鐵花", "鐵花村",
-        "accommodation", "hotel", "attraction", "sightseeing",
+                "accommodation", "hotel", "attraction", "sightseeing",
         "food", "restaurant", "activity"
     ]
 
