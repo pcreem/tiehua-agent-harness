@@ -1,4 +1,4 @@
-# Tiehua Tourism Agent Harness - Architecture Extensions
+# Taiwan Tourism Agent Harness - Architecture Extensions
 
 **Purpose:** Design document for three major feature extensions to align with "Multilingual Tourism AI Agent Architect" requirements.
 
@@ -246,7 +246,7 @@ class POIContentAuditor:
 ## 4. Folder Structure Changes
 
 ```
-tiehua-agent-harness/
+taiwan-tourism-agent-harness/
 ├── prompts/                          # NEW: Modular prompt system
 │   ├── roles/
 │   ├── styles/
