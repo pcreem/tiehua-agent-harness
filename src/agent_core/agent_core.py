@@ -5,8 +5,6 @@ import json
 import time
 from typing import List, Dict, Any, Optional, Literal
 
-from opentelemetry.trace import Status, StatusCode
-
 from src.agent_core.llm_client import LLMClient
 from src.agent_core.tool_executor import ToolExecutor
 from src.agent_core.message_formatter import MessageFormatter
@@ -18,11 +16,6 @@ from src.observability import (
     trace_agent_run, trace_llm_call, trace_tool_call,
     agent_logger, tool_logger, llm_logger
 )
-
-from src.tools import get_tool_registry
-from src.tools.base import BaseTool
-
-from src.safety import create_guardrails_pipeline, get_guardrails_pipeline
 
 
 class AgentCore:
@@ -179,12 +172,6 @@ class AgentCore:
             "state": state.to_dict()
         }
 
-    def run(self, user_query: str) -> Dict[str, Any]:
-        """Run agent with user query, return final answer and state."""
-        state = self._initialize_state(user_query)
-        state = self.run_with_state(state)
-        return self._build_result(state)
-
     def run_with_state(self, state) -> "AgentState":
         """Run agent with pre-initialized state, mutate and return state."""
         tool_call_count = 0
@@ -261,10 +248,6 @@ class AgentCore:
         messages = [{"role": "system", "content": system_prompt}] + messages
 
         return formatter.to_openai_format(messages)
-
-    def _get_tool_schemas(self) -> List[Dict]:
-        from src.tools import get_tool_registry
-        return get_tool_registry().get_schemas_dict()
 
     def _call_llm(self, messages, tools):
         from src.observability import trace_llm_call, get_logger

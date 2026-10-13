@@ -11,24 +11,10 @@ from typing import List, Dict, Any, Optional
 from dotenv import load_dotenv
 
 from src.state import AgentState, initialize_state
-from src.agent_core import AgentCore, Agent, create_agent
-from src.tools import WeatherTool, AttractionsTool, get_tool_registry
-from src.observability import (
-    get_logger,
-    get_metrics,
-    get_tracer,
-    trace_agent_run,
-    trace_llm_call,
-    trace_tool_call,
-    agent_logger,
-    tool_logger,
-    llm_logger,
-)
-from src.safety import create_guardrails_pipeline, get_guardrails_pipeline
+from src.agent_core import Agent, create_agent
+from src.tools import WeatherTool, AttractionsTool
 
-load_dotenv()
 
-# Tool schemas for LLM function calling (backward compatibility)
 TOOLS = [
     {
         "type": "function",
@@ -92,8 +78,5 @@ def create_agent(api_key: Optional[str] = None, **kwargs) -> "Agent":
     from src.agent_core import Agent
     return Agent(api_key=api_key)
 
-
-# Backward compatibility - re-export Agent class
-from src.agent_core import Agent, create_agent
 
 __all__ = ["Agent", "TOOLS", "SYSTEM_PROMPT", "create_agent"]

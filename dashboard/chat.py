@@ -27,7 +27,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from src.harness.runner import HarnessRunner
 from src.agent import create_agent
 from src.state import initialize_state
-from src.agent_core import AgentCore
 from dotenv import load_dotenv
 
 load_dotenv()

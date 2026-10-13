@@ -4,11 +4,9 @@ import time
 import json
 from typing import Dict, Any, List, Optional
 
-from src.tools.base import BaseTool, ToolResult
+from src.tools.base import ToolResult
 from src.safety import create_guardrails_pipeline
 from src.observability import get_metrics, trace_tool_call
-
-from opentelemetry.trace import Status, StatusCode
 
 
 class ToolExecutor:

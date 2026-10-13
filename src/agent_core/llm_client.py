@@ -6,7 +6,7 @@ from openai import OpenAI
 from openai import RateLimitError, APIError
 from opentelemetry.trace import Status, StatusCode
 
-from src.observability import get_logger, get_metrics, get_tracer, trace_llm_call
+from src.observability import get_logger, get_metrics, trace_llm_call
 
 logger = get_logger(__name__)
 
@@ -124,20 +124,8 @@ class LLMClient:
 
             duration = time.time() - start_time
 
-            # Record metrics
-            from src.observability import get_metrics
-            metrics = get_metrics()
-            metrics.record_llm_call(
-                model=model,
-                success=True,
-                duration=duration,
-                prompt_tokens=response.usage.prompt_tokens if response.usage else 0,
-                completion_tokens=response.usage.completion_tokens if response.usage else 0,
-            )
-            span = get_tracer().start_span("llm_call")
             span.set_attribute("llm.prompt_tokens", response.usage.prompt_tokens if response.usage else 0)
             span.set_attribute("llm.completion_tokens", response.usage.completion_tokens if response.usage else 0)
-            span.end()
 
             # 成功：更新當前模型為此模型（下次優先使用）
             self._model = model

@@ -10,10 +10,8 @@ from src.harness.graph import HarnessGraphRunner
 from src.harness.result import HarnessResult
 from src.agent import create_agent
 from src.observability import (
-    get_logger,
     get_metrics,
     get_tracer,
-    trace_retry,
     harness_logger,
 )
 from src.observability.tracing import trace_agent_run

@@ -11,7 +11,7 @@
 ```python
 @dataclass
 class AgentState:
-    # ... existing 17 fields ...
+    # ... existing 20 fields ...
     
     # NEW: Multilingual fields
     language: str = "zh-TW"          # Detected/selected language: zh-TW, en, ja
@@ -208,7 +208,7 @@ class POIContentAuditor:
         self.judge = LLMJudge(model=judge_model)
     
     def audit(self, output_path: Path) -> AuditReport:
-        # 1. Load attractions.json
+        # 1. Load data/processed/attractions.json
         # 2. For each POI, run LLM checks:
         #    - Hallucination: cross-reference with known facts / web search
         #    - Format consistency: required fields, field types, enum values
@@ -220,10 +220,10 @@ class POIContentAuditor:
 ```json
 {
   "summary": {
-    "total_pois": 58,
-    "passed": 45,
-    "warnings": 8,
-    "failures": 5
+    "total_pois": 6176,
+    "passed": 5900,
+    "warnings": 250,
+    "failures": 26
   },
   "hallucination_findings": [
     {"poi_id": "A001", "field": "description", "issue": "Claims UNESCO status but not listed", "severity": "high"}

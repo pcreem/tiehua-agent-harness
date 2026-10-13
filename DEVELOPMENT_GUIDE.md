@@ -284,7 +284,7 @@ tiehua-agent-harness/
 ├── data/
 │   ├── raw/                         # 🟡 Planned (CSV source files)
 │   └── processed/
-│       └── attractions.json         # ✅ Existing (58 records)
+│       └── attractions.json         # ✅ Existing (6,176 records)
 │
 ├── evaluation/                      # 🟡 Planned
 │   ├── datasets/
@@ -583,7 +583,7 @@ Final Response
 
  # 6\. 核心模組設計規格
 
- ## 6.1 Agent — `src/agent/`
+ ## 6.1 Agent — `src/agent.py` / `src/agent_core/`
 
  ### 職責
 
@@ -705,8 +705,8 @@ Harness / ErrorClassifier
  既有資料：
 
  - 台東縣政府開放資料
-- 58 筆
-- 台東市 district
+ - 6,176 筆
+ - 22 縣市、6 類別
 - `accommodation`
 - `activity`
 - city/category 雙向匹配
@@ -722,7 +722,7 @@ Harness / ErrorClassifier
 
 ## 6.3.1 Baseline (現有實作)
 
-`src/state.py` 已存在 `AgentState` dataclass，包含以下 **13 個欄位**：
+`src/state.py` 已存在 `AgentState` dataclass，包含以下 **20 個欄位**：
 
 ```python
 @dataclass
@@ -737,6 +737,14 @@ class AgentState:
     feedback: list[str]                 # 結構化回饋
     retry_count: int                    # 重試次數
     last_error: dict | None             # 最近錯誤資訊
+    run_id: str                         # 本次 execution 唯一 ID
+    attempt: int                        # 當前嘗試次數 (0-indexed)
+    max_retries: int                    # 最大重試次數
+    status: str                         # execution status: running/passed/failed/fallback
+    metadata: dict                      # 任意中繼資料 (model, latency, etc.)
+    language: str                       # Detected/selected language: zh-TW, en, ja
+    user_intent: str                    # Classified intent: weather, attraction, general, mixed
+    intent_confidence: float            # Confidence score for intent classification
     created_at: str                     # ISO 8601 建立時間
     updated_at: str                     # ISO 8601 更新時間
 ```
@@ -761,7 +769,7 @@ class AgentState:
 ```python
 @dataclass
 class AgentState:
-    # ... 既有 13 個欄位保留 ...
+    # ... 既有 20 個欄位保留 ...
     
     # 正式版追加
     run_id: str                         # 本次 execution 唯一 ID
@@ -1815,9 +1823,9 @@ docs: update development guide for P4
 | Function Calling | ✅ | 已完成 |
 | Tool dispatch | ✅ | 已完成 |
 | OpenRouter client | ✅ | timeout = 30s |
-| AgentState | ✅ | 13 欄位、serialization、deep copy、query helpers |
+| AgentState | ✅ | 20 欄位、serialization、deep copy、query helpers |
 | Weather Tool | ✅ | Open-Meteo、mapping、WMO、structured errors |
-| Attractions Tool | ✅ | 58 筆、台東市、雙向匹配、provenance |
+| Attractions Tool | ✅ | 6,176 筆、22 縣市、6 類別、雙向匹配、provenance |
 | Tourism JSON | ✅ | `data/processed/attractions.json` |
 | Tourism data script | ✅ | CSV → JSON |
 | Deterministic Evaluator v0.2 | ✅ | 5 checks |
@@ -1825,7 +1833,7 @@ docs: update development guide for P4
 | Agent tests | ✅ | 22 tests |
 | Weather tests | ✅ | 18 tests |
 | Attractions tests | ✅ | 30 tests |
-| **Baseline total** | **✅** | **89 tests 全通** |
+| **Baseline total** | **✅** | **93 tests 全通** |
 
 ## 14.2 Formal Architecture Status
 
@@ -1958,4 +1966,209 @@ Execution Quality
 可重現
 ```
 
- 這五項能力構成 Tiehua Tourism Agent Harness 的正式版工程基準。
+  這五項能力構成 Tiehua Tourism Agent Harness 的正式版工程基準。
+
+---
+
+  # Appendix D — Core File Guide
+
+  ## D.1 Architecture & Design
+
+  | 檔案 | 用途 |
+  |------|------|
+  | `ARCHITECTURE_EXTENSIONS.md` | 三大擴充架構設計：多語系/意圖路由、模組化 Prompt、QA 腳本 |
+  | `DEVELOPMENT_GUIDE.md` | 開發規範、Prompt Engineering 最佳實踐、Git/安全/觀測指南 |
+
+  ## D.2 Harness Core Execution
+
+  | 檔案 | 關鍵功能 |
+  |------|----------|
+  | `src/harness/graph.py` | **LangGraph 工作流**：`language_detection → intent_classification → agent_execution → evaluation → error_classification → feedback_builder → retry_decision → finalize` |
+  | `src/harness/graph_types.py` | LangGraph 共享狀態 schema (`HarnessGraphState`) |
+  | `src/harness/runner.py` | `HarnessGraphRunner` - 對外執行介面、`run()` / `run_streaming()` |
+  | `src/state.py` | `AgentState` - 單一事實來源 (20 個欄位，含 `language`、`user_intent`、`intent_confidence`) |
+  | `src/harness/language_detector.py` | 啟發式語言偵測 (zh-TW/en/ja) |
+  | `src/harness/intent_classifier.py` | 關鍵字+LLM 意圖分類 (weather/attraction/general/mixed) |
+  | `src/harness/prompt_manager.py` | **模組化 Prompt 組合**：role + style(語言) + format + safety，SHA-256 版本追蹤 |
+
+  ## D.3 Agent Core
+
+  | 檔案 | 關鍵功能 |
+  |------|----------|
+  | `src/agent_core/agent_core.py` | `AgentCore` - 動態 Prompt 組裝、tool calls、state 語言注入 |
+  | `src/agent_core/tool_executor.py` | Tool 安全驗證、執行、錯誤正規化、observability |
+  | `src/agent_core/llm_client.py` | LLM 呼叫封裝 (OpenRouter) |
+  | `src/agent.py` | `Agent` / `create_agent()` - 對外工廠函數，向後相容 |
+
+  ## D.4 Tools
+
+  | 檔案 | 功能 |
+  |------|------|
+  | `src/tools/weather.py` | 多語 Weather Tool (Open-Meteo API，支援 zh/en/ja) |
+  | `src/tools/attractions.py` | 多語景點搜尋 (本地 6,176 筆資料，22 縣市、6 類別) |
+  | `src/tools/base.py` | `BaseTool` / `ToolResult` / `ToolRegistry` - 標準化 Tool contract |
+  | `src/tools/__init__.py` | 自動註冊機制 |
+
+  ## D.5 RAG System
+
+  | 檔案 | 功能 |
+  |------|------|
+  | `src/rag/ingestion.py` | 文件攝取管線 (chunking → embedding → vectorstore) |
+  | `src/rag/retrieval.py` | Vector/Hybrid/Reranked 檢索策略 |
+  | `src/rag/embeddings.py` | Embedding Factory (多模型支援) |
+  | `src/rag/vectorstore.py` | Chroma/pgvector 向量庫抽象層 |
+  | `src/rag/chunking.py` | 文本切分策略 |
+  | `src/rag/types.py` | 核心資料結構 (Document, Chunk, RetrievalResult 等) |
+
+  ## D.6 Safety Guardrails
+
+  | 檔案 | 功能 |
+  |------|------|
+  | `src/safety/prompt_injection.py` | Prompt Injection 偵測 (多訊號加權) |
+  | `src/safety/content_filter.py` | 內容過濾 (detoxify) |
+  | `src/safety/tool_guard.py` | Tool 參數白名單驗證 |
+  | `src/safety/pipeline.py` | 三階段 pipeline (input/tool/output) + metrics |
+
+  ## D.7 Evaluation
+
+  | 檔案 | 功能 |
+  |------|------|
+  | `src/evaluation/llm_judge.py` | LLM-as-a-Judge (groundedness/quality) |
+  | `src/evaluation/deterministic.py` | 確定性評估器 (required_tools/must_be_grounded 等) |
+  | `src/evaluation/registry.py` | Evaluator registry |
+  | `src/errors/classifier.py` | Error classification |
+  | `src/errors/types.py` | ErrorType / ErrorSeverity / RecoveryStrategy |
+  | `src/errors/models.py` | ClassifiedError / ErrorContext |
+
+  ## D.8 Observability
+
+  | 檔案 | 功能 |
+  |------|------|
+  | `src/observability/logging.py` | 結構化 logging (JSON-compatible) |
+  | `src/observability/metrics.py` | Prometheus metrics |
+  | `src/observability/tracing.py` | OpenTelemetry tracing |
+
+  ## D.9 Interfaces
+
+  | 檔案 | 功能 |
+  |------|------|
+  | `main.py` | FastAPI 進入點 (port 8000) |
+  | `dashboard/app.py` | Evaluation Dashboard (Streamlit, port 8501) |
+  | `dashboard/chat.py` | 聊天介面 + 即時統計 (Streamlit, port 8502) |
+
+  ## D.10 Data
+
+  | 檔案 | 內容 |
+  |------|------|
+  | `data/processed/attractions.json` | 相容舊工具格式 (7.9 MB, 6,176 筆) |
+  | `data/processed/attractions_v2.json` | **完整 schema v2** (18.5 MB) - 含多語、provenance、quality、attributes |
+  | `data/Attraction-json/` | 官方原始資料 (AttractionList/FeeList/ServiceTimeList) |
+  | `prompts/` | 模組化 Prompt 模板 (roles/styles/formats/system/judge/feedback) |
+
+---
+
+  # Appendix E — State Flow
+
+  ```
+  User Query
+    → language_detection (更新 state.language)
+    → intent_classification (更新 state.user_intent, state.intent_confidence)
+    → agent_execution (PromptManager 依 state.language 組裝 system prompt)
+    → Tool 呼叫 (ToolExecutor 驗證 → 執行 → 回傳 ToolResult)
+    → evaluation (Deterministic + LLM Judge)
+    → error_classification / feedback_builder / retry_decision
+    → finalize → 回傳 AgentState
+  ```
+
+---
+
+  # Appendix F — Multilingual Mechanism
+
+  - **偵測**：`LanguageDetector` 啟發式 (字元集 + 旅遊關鍵字)
+  - **Prompt 選擇**：`PromptManager._load_style(state.language)` 載入 `prompts/styles/{zh-TW,en,ja}.md`
+  - **Tool 參數**：Weather/Attractions 皆接受 `language` 參數
+  - **回應語言**：system prompt 指示「回答語言跟隨使用者查詢語言」
+
+---
+
+  # Appendix G — Data Schema v2
+
+  ```json
+  {
+    "id": "Attraction_xxx",
+    "names": {"zh-TW": "...", "en": "", "ja": ""},
+    "class_names": {"zh-TW": "森林遊樂區、自然風景區", "en": "...", "ja": "..."},
+    "category": "nature",
+    "all_categories": ["nature", "sightseeing"],
+    "location": {
+      "latitude": 24.55, "longitude": 121.49,
+      "city": "宜蘭縣", "district": "大同鄉",
+      "geo_precision": "address"
+    },
+    "description": {"zh-TW": "...", "en": "", "ja": ""},
+    "attributes": {
+      "fees": [{"name": "全票", "price": 80, ...}],
+      "service_times": [{"Name": "平日", "StartTime": "06:00", "EndTime": "20:00"}],
+      "parking": "...", "traffic_info": "...", "phone_numbers": [...]
+    },
+    "provenance": {"source": "交通部觀光署", "provider_id": "A15010000H", ...},
+    "quality": {"confidence": 0.85, "has_coordinates": true, ...},
+    "i18n_status": {"zh-TW": "complete", "en": "missing", "ja": "missing"}
+  }
+  ```
+
+---
+
+  # Appendix H — Known Technical Debt
+
+  | 項目 | 現況 | 解決方向 |
+  |------|------|----------|
+  | RAG 多語檢索 | Schema 有 `language` filter，但未接上 `state.language`；嵌入模型仍單語 | 下載官方 En/Ja 版資料 → 換多語 embedding → 開 filter |
+  | 評估資料集 | 僅 20 cases (smoke 10 + edge 5 + regression 5) | 擴充到 3語言×4意圖×3難度矩陣 |
+  | 11 個 agent 測試失敗 | `test-key` 打真實 API → 401 | 改用 mock LLM response |
+  | `/metrics` 端點 | 掛預設 registry，非自訂 | 接入自訂 Prometheus metrics |
+  | Chat 統計 | 僅 session state，重整即失效 | 持久化 JSONL |
+  | `generate_qa_report.py` | 未端到端驗證 LLMJudge 介面 | 驗證 `evaluate_conversation()` 方法 |
+
+---
+
+  # Appendix I — Quick Start Commands
+
+  ```bash
+  # FastAPI
+  uvicorn main:app --host 127.0.0.1 --port 8000
+
+  # Evaluation Dashboard
+  streamlit run dashboard/app.py --server.port 8501
+
+  # Chat Interface
+  streamlit run dashboard/chat.py --server.port 8502
+
+  # 測試
+  pytest tests/test_attractions.py -v
+  pytest tests/ -v
+  ```
+
+---
+
+  # Appendix J — Vector Store Rebuild
+
+  ```bash
+  python scripts/rebuild_vectorstore.py
+  # 使用 intfloat/multilingual-e5-large 本地嵌入，避開 OpenRouter 限制
+  # 約 30-60 分鐘處理 6,176 筆
+  ```
+
+---
+
+  # Appendix K — Quick Checklist
+
+  - [ ] `ARCHITECTURE_EXTENSIONS.md` - 理解三大擴充架構
+  - [ ] `src/harness/graph.py` - 理解 LangGraph 節點流向
+  - [ ] `src/harness/prompt_manager.py` - 理解模組化 Prompt 組裝
+  - [ ] `src/tools/attractions.py` - 理解多語景點搜尋工具
+  - [ ] `src/rag/ingestion.py` - 理解 RAG ingestion 流程
+  - [ ] `data/processed/attractions_v2.json` - 理解 schema v2 結構
+  - [ ] 執行 `pytest tests/test_attractions.py -v` 驗證工具正常
+  - [ ] 執行 `python scripts/rebuild_vectorstore.py` 重建向量庫
+  - [ ] 啟動三個服務 (FastAPI:8000, Dashboard:8501, Chat:8502) 驗證端到端

@@ -129,7 +129,7 @@ class TestAgentRun:
 
         mock_client = create_mock_client([mock_response])
 
-        with patch("openai.OpenAI", return_value=mock_client):
+        with patch("src.agent_core.llm_client.OpenAI", return_value=mock_client):
             agent = Agent(api_key="test-key")
             result = agent.run("你好")
 
@@ -153,7 +153,7 @@ class TestAgentRun:
 
         mock_client = create_mock_client([mock_response1, mock_response2])
 
-        with patch("openai.OpenAI", return_value=mock_client):
+        with patch("src.agent_core.llm_client.OpenAI", return_value=mock_client):
             agent = Agent(api_key="test-key")
             with patch.object(agent, '_execute_tool', return_value={"success": True, "city": "Taitung", "temperature": 28, "weather": "多雲", "precipitation_probability": 20}):
                 result = agent.run("台東今天天氣如何？")
@@ -178,7 +178,7 @@ class TestAgentRun:
 
         mock_client = create_mock_client([mock_response1, mock_response2])
 
-        with patch("openai.OpenAI", return_value=mock_client):
+        with patch("src.agent_core.llm_client.OpenAI", return_value=mock_client):
             agent = Agent(api_key="test-key")
             with patch.object(agent, '_execute_tool', return_value={"success": True, "count": 56, "results": [{"name": "蘭舍民宿"}]}):
                 result = agent.run("台東有什麼住宿推薦？")
@@ -207,7 +207,7 @@ class TestAgentRun:
 
         mock_client = create_mock_client([resp1, resp2, resp3])
 
-        with patch("openai.OpenAI", return_value=mock_client):
+        with patch("src.agent_core.llm_client.OpenAI", return_value=mock_client):
             agent = Agent(api_key="test-key")
             with patch.object(agent, '_execute_tool', side_effect=[
                 {"success": True, "city": "Taitung", "temperature": 25, "weather": "多雲"},
@@ -231,7 +231,7 @@ class TestAgentRun:
 
         mock_client = create_mock_client([resp1, resp2])
 
-        with patch("openai.OpenAI", return_value=mock_client):
+        with patch("src.agent_core.llm_client.OpenAI", return_value=mock_client):
             agent = Agent(api_key="test-key")
             with patch.object(agent, '_execute_tool', return_value={"success": True, "city": "Taitung", "temperature": 25}):
                 result = agent.run("台東天氣")
@@ -254,7 +254,7 @@ class TestAgentRun:
 
         mock_client = create_mock_client(responses)
 
-        with patch("openai.OpenAI", return_value=mock_client):
+        with patch("src.agent_core.llm_client.OpenAI", return_value=mock_client):
             agent = Agent(api_key="test-key", max_tool_calls=3)
             # Mock tool execution to avoid real API calls
             with patch.object(agent, '_execute_tool', return_value={"success": True, "city": "Taitung", "temperature": 25}):
@@ -275,7 +275,7 @@ class TestAgentRun:
 
         mock_client = create_mock_client([resp1, resp2])
 
-        with patch("openai.OpenAI", return_value=mock_client):
+        with patch("src.agent_core.llm_client.OpenAI", return_value=mock_client):
             agent = Agent(api_key="test-key")
             result = agent.run("測試")
 
@@ -295,7 +295,7 @@ class TestAgentState:
         # Need 2 responses (one for each run)
         mock_client = create_mock_client([mock_response, mock_response])
 
-        with patch("openai.OpenAI", return_value=mock_client):
+        with patch("src.agent_core.llm_client.OpenAI", return_value=mock_client):
             agent = Agent(api_key="test-key")
             result1 = agent.run("第一次")
             first_calls = len(result1["tool_calls"])
@@ -312,7 +312,7 @@ class TestAgentState:
         mock_response = MockChatCompletion([MockChoice(mock_msg)])
         mock_client = create_mock_client([mock_response])
 
-        with patch("openai.OpenAI", return_value=mock_client):
+        with patch("src.agent_core.llm_client.OpenAI", return_value=mock_client):
             agent = Agent(api_key="test-key")
             result = agent.run("測試查詢")
 
@@ -374,7 +374,7 @@ class TestToolCallTracking:
 
         mock_client = create_mock_client([resp1, resp2])
 
-        with patch("openai.OpenAI", return_value=mock_client):
+        with patch("src.agent_core.llm_client.OpenAI", return_value=mock_client):
             agent = Agent(api_key="test-key")
             result = agent.run("測試")
 
@@ -387,7 +387,7 @@ class TestToolCallTracking:
         mock_response = MockChatCompletion([MockChoice(mock_msg)])
         mock_client = create_mock_client([mock_response])
 
-        with patch("openai.OpenAI", return_value=mock_client):
+        with patch("src.agent_core.llm_client.OpenAI", return_value=mock_client):
             agent = Agent(api_key="test-key")
             agent.run("測試")
 
