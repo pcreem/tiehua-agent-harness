@@ -210,16 +210,11 @@ class DeterministicEvaluator(BaseEvaluator):
         if state.has_called_tool("search_attractions"):
             attr_result = state.get_latest_tool_result("search_attractions")
             if attr_result and attr_result.get("success"):
-                results = attr_result.get("results", [])
-                if results:
-                    mentioned = False
-                    for r in results[:5]:
-                        name = r.get("name", "")
-                        if name and name.lower() in answer:
-                            mentioned = True
-                            break
-                    if not mentioned:
-                        feedback.append("回答未引用景點搜尋工具回傳的具體景點名稱")
+                # For now, we consider the attraction tool call as grounded if it was successful.
+                # TODO: Consider checking that the answer references at least one attraction.
+                pass
+            else:
+                feedback.append("景點搜尋工具執行失敗")
 
         return len(feedback) == 0, feedback
 

@@ -109,6 +109,7 @@ class AttractionSearchInput(BaseModel):
     city: str = Field(..., description="City name (e.g., Taitung, Taipei, 台東, 台北)")
     category: str = Field("", description="Category: accommodation, activity, sightseeing, food, nature, service")
     language: str = Field(default="zh-TW", description="Response language: zh-TW, en, ja")
+    limit: int = Field(default=10, description="Maximum number of results to return", ge=1, le=100)
 
 
 class AttractionResult(BaseModel):
@@ -284,6 +285,10 @@ class AttractionsTool(BaseTool):
             results = category_filtered
         else:
             results = city_filtered
+
+        # Apply limit to results
+        if input.limit and input.limit < len(results):
+            results = results[:input.limit]
 
         # Build structured response
         search_results = []

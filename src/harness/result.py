@@ -19,6 +19,7 @@ class HarnessResult:
     tool_results: List[Dict[str, Any]] = field(default_factory=list)
     evaluation: Optional[Dict[str, Any]] = None
     feedback: List[Dict[str, Any]] = field(default_factory=list)
+    duration_ms: int = 0
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -32,4 +33,5 @@ class HarnessResult:
             "evaluation": self.evaluation,
             "feedback": self.feedback,
             "state": self.state.to_dict(),
+            "duration_ms": self.duration_ms,
         }

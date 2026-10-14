@@ -72,6 +72,7 @@ class HarnessRunner:
                     tool_results=final_state.tool_results,
                     evaluation=final_state.evaluation,
                     feedback=final_state.feedback,
+                    duration_ms=int(duration * 1000),
                 )
 
                 # Record metrics
