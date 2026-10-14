@@ -251,36 +251,6 @@ in the available tool results.
             agent_response=agent_response,
         )
 
-    def _load_prompt(self) -> str:
-        """Load judge prompt from file."""
-        prompt_path = os.path.join(
-            os.path.dirname(__file__), "..", "..", "prompts", "judge.md"
-        )
-        if os.path.exists(prompt_path):
-            with open(prompt_path, 'r', encoding='utf-8') as f:
-                return f.read()
-        return self._default_prompt()
-
-    def _format_tool_calls(self, tool_calls: List[Dict]) -> str:
-        """Format tool calls for prompt."""
-        if not tool_calls:
-            return "No tool calls made."
-        lines = []
-        for tc in tool_calls:
-            lines.append(f"- {tc['name']}({tc.get('arguments', {})})")
-        return "\n".join(lines)
-
-    def _format_tool_results(self, tool_results: List[Dict]) -> str:
-        """Format tool results for prompt."""
-        if not tool_results:
-            return "No tool results."
-        lines = []
-        for tr in tool_results:
-            result = tr.get('result', {})
-            success = result.get('success', False)
-            lines.append(f"- {tr['name']}: {'SUCCESS' if success else 'FAILED'} - {result}")
-        return "\n".join(lines)
-
     def _call_llm(self, prompt: str, model: str = None) -> Optional[Dict]:
         """Call LLM with prompt."""
         model = model or self.model
@@ -358,36 +328,6 @@ in the available tool results.
                 retry=True,
                 reason=f"LLM Judge 錯誤: {str(e)}"
             )
-
-    def _load_prompt(self) -> str:
-        """Load judge prompt from file."""
-        prompt_path = os.path.join(
-            os.path.dirname(__file__), "..", "..", "prompts", "judge.md"
-        )
-        if os.path.exists(prompt_path):
-            with open(prompt_path, 'r', encoding='utf-8') as f:
-                return f.read()
-        return self._default_prompt()
-
-    def _format_tool_calls(self, tool_calls: List[Dict]) -> str:
-        """Format tool calls for prompt."""
-        if not tool_calls:
-            return "No tool calls made."
-        lines = []
-        for tc in tool_calls:
-            lines.append(f"- {tc['name']}({tc.get('arguments', {})})")
-        return "\n".join(lines)
-
-    def _format_tool_results(self, tool_results: List[Dict]) -> str:
-        """Format tool results for prompt."""
-        if not tool_results:
-            return "No tool results."
-        lines = []
-        for tr in tool_results:
-            result = tr.get('result', {})
-            success = result.get('success', False)
-            lines.append(f"- {tr['name']}: {'SUCCESS' if success else 'FAILED'} - {result}")
-        return "\n".join(lines)
 
 
 class LLMJudgeEvaluator:

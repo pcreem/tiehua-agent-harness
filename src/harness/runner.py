@@ -112,20 +112,30 @@ class HarnessRunner:
         )
         return harness_loop.execute(state)
 
-    def run_streaming(self, query: str):
-        """Run harness with streaming results for real-time monitoring."""
+    def run_streaming(self, query: str, max_retries: Optional[int] = None):
+        """Run harness with streaming results for real-time monitoring.
+
+        Args:
+            query: The user query to execute.
+            max_retries: Override for max retries (defaults to instance setting).
+
+        Yields:
+            dict: State snapshot after each LangGraph node execution.
+        """
         if not self.use_langgraph:
             raise NotImplementedError("Streaming only available with LangGraph")
 
+        effective_max_retries = max_retries if max_retries is not None else self.max_retries
+
         agent = self.agent_factory()
-        state = initialize_state(query, max_retries=self.max_retries)
+        state = initialize_state(query, max_retries=effective_max_retries)
 
         graph_runner = HarnessGraphRunner(
             agent_fn=lambda s: agent.run_with_state(s),
             evaluator_fn=self.evaluator_fn,
-            max_retries=self.max_retries,
+            max_retries=effective_max_retries,
             thread_id=state.run_id,
         )
 
-        for step in graph_runner.run_streaming(query):
+        for step in graph_runner.run_streaming(query, max_retries=effective_max_retries):
             yield step

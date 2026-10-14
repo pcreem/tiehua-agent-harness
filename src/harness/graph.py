@@ -288,7 +288,8 @@ class HarnessGraphRunner:
         """Execute the harness graph with a query."""
         from src.state import initialize_state
 
-        initial_state = initialize_state(query, max_retries=max_retries if max_retries is not None else 2)
+        effective_max_retries = max_retries if max_retries is not None else self.max_retries
+        initial_state = initialize_state(query, max_retries=effective_max_retries)
         initial_state.add_message("user", query)
 
         graph_config = {"configurable": {"thread_id": self.thread_id}}
@@ -309,11 +310,20 @@ class HarnessGraphRunner:
 
         return result["agent_state"]
 
-    def run_streaming(self, query: str):
-        """Stream execution steps for real-time monitoring."""
+    def run_streaming(self, query: str, max_retries: Optional[int] = None):
+        """Stream execution steps for real-time monitoring.
+
+        Args:
+            query: The user query to execute.
+            max_retries: Override for the max retries (defaults to instance setting).
+
+        Yields:
+            dict: State snapshot after each node execution.
+        """
         from src.state import initialize_state
 
-        initial_state = initialize_state(query, max_retries=2)
+        effective_max_retries = max_retries if max_retries is not None else self.max_retries
+        initial_state = initialize_state(query, max_retries=effective_max_retries)
         initial_state.add_message("user", query)
         graph_config = {"configurable": {"thread_id": self.thread_id}}
 

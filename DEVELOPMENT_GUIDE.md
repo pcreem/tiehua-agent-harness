@@ -1976,7 +1976,6 @@ Execution Quality
 
   | 檔案 | 用途 |
   |------|------|
-  | `ARCHITECTURE_EXTENSIONS.md` | 三大擴充架構設計：多語系/意圖路由、模組化 Prompt、QA 腳本 |
   | `DEVELOPMENT_GUIDE.md` | 開發規範、Prompt Engineering 最佳實踐、Git/安全/觀測指南 |
 
   ## D.2 Harness Core Execution
@@ -2061,7 +2060,7 @@ Execution Quality
   | 檔案 | 內容 |
   |------|------|
   | `data/processed/attractions.json` | 相容舊工具格式 (7.9 MB, 6,176 筆) |
-  | `data/processed/attractions_v2.json` | **完整 schema v2** (18.5 MB) - 含多語、provenance、quality、attributes |
+   | `data/processed/attractions.json` | **應用使用中** - 標準景點資料 |
   | `data/Attraction-json/` | 官方原始資料 (AttractionList/FeeList/ServiceTimeList) |
   | `prompts/` | 模組化 Prompt 模板 (roles/styles/formats/system/judge/feedback) |
 
@@ -2163,12 +2162,11 @@ Execution Quality
 
   # Appendix K — Quick Checklist
 
-  - [ ] `ARCHITECTURE_EXTENSIONS.md` - 理解三大擴充架構
   - [ ] `src/harness/graph.py` - 理解 LangGraph 節點流向
   - [ ] `src/harness/prompt_manager.py` - 理解模組化 Prompt 組裝
   - [ ] `src/tools/attractions.py` - 理解多語景點搜尋工具
   - [ ] `src/rag/ingestion.py` - 理解 RAG ingestion 流程
-  - [ ] `data/processed/attractions_v2.json` - 理解 schema v2 結構
+   - [ ] `data/processed/attractions.json` - 理解景點資料 schema
   - [ ] 執行 `pytest tests/test_attractions.py -v` 驗證工具正常
   - [ ] 執行 `python scripts/rebuild_vectorstore.py` 重建向量庫
   - [ ] 啟動三個服務 (FastAPI:8000, Dashboard:8501, Chat:8502) 驗證端到端
