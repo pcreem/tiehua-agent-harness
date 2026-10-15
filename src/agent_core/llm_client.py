@@ -1,5 +1,6 @@
-"""LLM Client wrapper for OpenRouter API with multi-model fallback."""
+"""LLM Client wrapper for OpenRouter API with multi-model fallback (including Mistral)."""
 
+import os
 import time
 from typing import List, Dict, Any, Optional
 from openai import OpenAI
@@ -11,8 +12,8 @@ from src.observability import get_logger, get_metrics, trace_llm_call
 logger = get_logger(__name__)
 
 
-# 預設免費模型清單（優先序：越前面越優先使用）
-DEFAULT_FREE_MODELS = [
+# OpenRouter 免費模型清單（優先序：越前面越優先使用）
+OPENROUTER_FREE_MODELS = [
     "nvidia/nemotron-3-ultra-550b-a55b:free",      # 原預設模型
     "poolside/laguna-s-2.1:free",                   # 程式碼生成強
     "nvidia/nemotron-3.5-lightning:free",           # 輕量快速
@@ -20,6 +21,14 @@ DEFAULT_FREE_MODELS = [
     "nvidia/nemotron-3-super-120b-a12b:free",       # 大模型
     "thinkingmachines/inkling:free",                # 思考型
     "apodex/apodex-1.1-mini:free",                  # 輕量
+]
+
+# Mistral 模型清單（需要 MISTRAL_API_KEY）
+MISTRAL_MODELS = [
+    "mistral-moderation-2603",   # 內容審核模型，較快
+    "mistral-medium-latest",      # 中等規模模型，平衡速度與品質
+    "mistral-large-latest",       # 大模型，較強推理能力
+    "pixtral-large-latest",       # 多模態模型
 ]
 
 
@@ -31,7 +40,7 @@ class ModelExhaustedError(Exception):
 
 
 class LLMClient:
-    """Wrapper for OpenRouter/OpenAI LLM client with multi-model fallback."""
+    """Wrapper for OpenRouter/OpenAI LLM client with multi-model fallback across providers."""
 
     def __init__(
         self,
@@ -40,18 +49,29 @@ class LLMClient:
         model: str = "nvidia/nemotron-3-ultra-550b-a55b:free",
         fallback_models: Optional[List[str]] = None,
         timeout: float = 30.0,
+        mistral_api_key: Optional[str] = None,
     ):
         self.api_key = api_key
         self.base_url = base_url
         self._primary_model = model
-        self._fallback_models = fallback_models or DEFAULT_FREE_MODELS
-        # 確保 primary model 在 fallback 清單最前面
-        self._all_models = [model] + [m for m in self._fallback_models if m != model]
+        self._openrouter_fallback = fallback_models or OPENROUTER_FREE_MODELS
+        self.mistral_api_key = mistral_api_key or os.getenv("MISTRAL_API_KEY")
         self.timeout = timeout
 
-        self.client = OpenAI(api_key=api_key, base_url=base_url, timeout=30.0)
+        # OpenRouter client
+        self.client = OpenAI(api_key=api_key, base_url=base_url, timeout=timeout)
+        
+        # Mistral client (lazy init)
+        self._mistral_client = None
+        
+        # 建立完整的模型鏈：OpenRouter models -> Mistral models
+        self._all_models = [model] + [m for m in self._openrouter_fallback if m != model]
+        if self.mistral_api_key:
+            self._all_models += MISTRAL_MODELS
+            
         self._current_model_idx = 0
         self._model = self._all_models[0]  # 目前使用的模型
+        self._current_provider = "openrouter"  # 追蹤目前 provider
 
     @property
     def model(self) -> str:
@@ -62,6 +82,26 @@ class LLMClient:
         self._model = value
         if value in self._all_models:
             self._current_model_idx = self._all_models.index(value)
+            # 判斷 provider
+            if value in MISTRAL_MODELS:
+                self._current_provider = "mistral"
+            else:
+                self._current_provider = "openrouter"
+
+    def _get_client_for_model(self, model: str):
+        """Get the appropriate client for a model."""
+        if model in MISTRAL_MODELS:
+            if self._mistral_client is None:
+                if not self.mistral_api_key:
+                    raise ValueError("MISTRAL_API_KEY not configured")
+                # Mistral uses OpenAI-compatible API
+                self._mistral_client = OpenAI(
+                    api_key=self.mistral_api_key,
+                    base_url="https://api.mistral.ai/v1",
+                    timeout=self.timeout,
+                )
+            return self._mistral_client
+        return self.client
 
     def complete(
         self,
@@ -100,6 +140,8 @@ class LLMClient:
 
         # 所有模型都失敗
         self._current_model_idx = 0  # 重置
+        self._model = self._all_models[0]
+        self._current_provider = "openrouter" if self._all_models[0] not in MISTRAL_MODELS else "mistral"
         raise ModelExhaustedError(tried_models)
 
     def _call_single_model(
@@ -113,8 +155,12 @@ class LLMClient:
         """呼叫單一模型，成功時更新 current model"""
         start_time = time.time()
 
+        # 取得正確的 client
+        client = self._get_client_for_model(model)
+        provider = "mistral" if model in MISTRAL_MODELS else "openrouter"
+
         with trace_llm_call(model) as span:
-            response = self.client.chat.completions.create(
+            response = client.chat.completions.create(
                 model=model,
                 messages=messages,
                 tools=tools,
@@ -126,10 +172,12 @@ class LLMClient:
 
             span.set_attribute("llm.prompt_tokens", response.usage.prompt_tokens if response.usage else 0)
             span.set_attribute("llm.completion_tokens", response.usage.completion_tokens if response.usage else 0)
+            span.set_attribute("llm.provider", provider)
 
             # 成功：更新當前模型為此模型（下次優先使用）
             self._model = model
             self._current_model_idx = self._all_models.index(model)
+            self._current_provider = provider
 
             return response
 
@@ -140,15 +188,32 @@ class LLMClient:
         """取得所有可用模型清單"""
         return self._all_models.copy()
 
+    def get_openrouter_models(self) -> List[str]:
+        """取得 OpenRouter 模型清單"""
+        return [m for m in self._all_models if m not in MISTRAL_MODELS]
+
+    def get_mistral_models(self) -> List[str]:
+        """取得 Mistral 模型清單"""
+        return [m for m in self._all_models if m in MISTRAL_MODELS]
+
     def reset_to_primary(self):
         """重置回主要模型"""
         self._current_model_idx = 0
         self._model = self._all_models[0]
+        self._current_provider = "openrouter" if self._all_models[0] not in MISTRAL_MODELS else "mistral"
 
     @property
     def primary_model(self) -> str:
         return self._primary_model
 
     @property
-    def fallback_models(self) -> List[str]:
-        return self._fallback_models.copy()
+    def openrouter_fallback_models(self) -> List[str]:
+        return self._openrouter_fallback.copy()
+
+    @property
+    def mistral_fallback_models(self) -> List[str]:
+        return MISTRAL_MODELS.copy()
+
+    @property
+    def current_provider(self) -> str:
+        return self._current_provider

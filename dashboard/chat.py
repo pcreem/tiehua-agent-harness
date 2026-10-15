@@ -6,6 +6,7 @@ A Streamlit chat interface that:
 - Shows conversation history
 - Displays live statistics (tool usage, eval scores, safety, etc.)
 - Supports multilingual (zh-TW, en, ja)
+- Saves evaluation reports to evaluation/reports/ for dashboard viewing
 """
 
 import streamlit as st
@@ -16,6 +17,7 @@ import uuid
 from pathlib import Path
 from typing import Dict, List, Any
 import sys
+from datetime import datetime
 
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -23,6 +25,99 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from src.harness.runner import HarnessRunner
 from src.state import initialize_state
 from dotenv import load_dotenv
+
+# === Evaluation Report Saving ===
+
+REPORTS_DIR = Path(__file__).resolve().parent.parent / "evaluation" / "reports"
+REPORTS_DIR.mkdir(parents=True, exist_ok=True)
+
+
+def save_evaluation_report(result, query: str, language: str, conversation_id: str) -> Path:
+    """Save evaluation report to JSON file for dashboard viewing.
+    
+    Args:
+        result: HarnessResult from runner.run()
+        query: User query string
+        language: Response language
+        conversation_id: Conversation ID for tracking
+        
+    Returns:
+        Path to saved report file
+    """
+    # Extract tool calls
+    tool_calls = safe_get_tool_calls(getattr(result.state, 'tool_calls', []))
+    tool_names = [tc["name"] for tc in tool_calls]
+    
+    # Extract tool results
+    tool_results = safe_get_tool_results(getattr(result.state, 'tool_results', []))
+    
+    # Determine category from intent
+    intent = getattr(result.state, 'user_intent', 'unknown')
+    category_map = {
+        'weather': 'weather',
+        'attractions': 'attractions', 
+        'accommodation': 'accommodation',
+        'transportation': 'transportation',
+        'food': 'food',
+        'general': 'general',
+        'unknown': 'general'
+    }
+    category = category_map.get(intent, 'general')
+    
+    # Get score from evaluation if available
+    score = None
+    evaluator = "deterministic"
+    if hasattr(result, 'evaluation') and result.evaluation:
+        if hasattr(result.evaluation, 'score'):
+            score = result.evaluation.score
+        elif isinstance(result.evaluation, dict):
+            score = result.evaluation.get('score')
+        evaluator = getattr(result.evaluation, 'evaluator', 'deterministic') if hasattr(result.evaluation, 'evaluator') else result.evaluation.get('evaluator', 'deterministic') if isinstance(result.evaluation, dict) else 'deterministic'
+    
+    # If no evaluation score, try to infer from status
+    if score is None:
+        status = getattr(result, 'status', 'unknown')
+        if status == 'passed':
+            score = 1.0
+        elif status == 'fallback':
+            score = 0.5
+        else:
+            score = 0.0
+    
+    # Get safety violations if available
+    safety_violations = []
+    if hasattr(result.state, 'safety_violations') and result.state.safety_violations:
+        safety_violations = result.state.safety_violations
+    
+    # Build report matching app.py expected format
+    report = {
+        "id": getattr(result.state, 'run_id', str(uuid.uuid4())),
+        "query": query,
+        "status": getattr(result, 'status', 'unknown'),
+        "score": score,
+        "retry_count": getattr(result, 'retry_count', 0),
+        "tool_calls": tool_calls,
+        "tool_results": tool_results,
+        "safety_violations": safety_violations,
+        "evaluator": evaluator,
+        "category": category,
+        "language": language,
+        "conversation_id": conversation_id,
+        "final_answer": getattr(result, 'final_answer', ''),
+        "duration_ms": getattr(result, 'duration_ms', 0),
+        "timestamp": datetime.now().isoformat(),
+    }
+    
+    # Generate filename with timestamp
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_%f')
+    filename = f"chat_report_{timestamp}.json"
+    filepath = REPORTS_DIR / filename
+    
+    # Save to file
+    with open(filepath, 'w', encoding='utf-8') as f:
+        json.dump(report, f, ensure_ascii=False, indent=2, default=str)
+    
+    return filepath
 
 
 # Custom runner that supports language parameter
@@ -139,6 +234,8 @@ class LanguageAwareRunner(HarnessRunner):
             evaluator_fn=self.evaluator_fn,
             max_retries=self.max_retries,
             thread_id=thread_id,  # Use conversation_id as thread_id for checkpoint persistence
+            enable_safety=True,
+            enable_llm_judge=True,
         )
         return graph_runner.run(state.query, max_retries=self.max_retries)
 
@@ -346,13 +443,13 @@ def render_sidebar():
             help="啟用 LangGraph 以獲得更好的可觀測性"
         )
         
-        if st.button("🔄 重置對話", use_container_width=True):
+        if st.button("🔄 重置對話", width="stretch"):
             st.session_state.messages = []
             st.session_state.conversation_id = str(uuid.uuid4())
             # Keep stats across conversations unless user wants reset
             st.rerun()
         
-        if st.button("🗑️ 重置統計", use_container_width=True):
+        if st.button("🗑️ 重置統計", width="stretch"):
             reset_stats()
             st.rerun()
         
@@ -696,6 +793,19 @@ def main():
                 # Update stats
                 update_stats(result)
                 
+                # Save evaluation report for dashboard
+                try:
+                    report_path = save_evaluation_report(
+                        result=result,
+                        query=user_input,
+                        language=st.session_state.current_language,
+                        conversation_id=st.session_state.conversation_id
+                    )
+                    # Optional: show save confirmation in sidebar or as toast
+                    # st.toast(f"Report saved: {report_path.name}")
+                except Exception as e:
+                    logger.warning(f"Failed to save evaluation report: {e}")
+                
             except Exception as e:
                 query_duration_ms = int((time.time() - query_start_time) * 1000)
                 # Log full error to server
@@ -709,13 +819,44 @@ def main():
                     duration_ms=query_duration_ms
                 )
                 # Add error message to history
-                st.session_state.messages.append({
+                error_msg = {
                     "role": "assistant",
                     "content": "抱歉，服務暫時發生問題，請稍後再試。",
                     "tool_calls": [],
                     "tool_results": [],
                     "metadata": {"error": str(e), "status": "error", "duration_ms": query_duration_ms}
-                })
+                }
+                st.session_state.messages.append(error_msg)
+                
+                # Save failed query report for dashboard
+                try:
+                    # Create a minimal result-like object for failed queries
+                    class FailedResult:
+                        def __init__(self):
+                            self.status = "error"
+                            self.retry_count = 0
+                            self.duration_ms = query_duration_ms
+                            self.final_answer = ""
+                            class State:
+                                def __init__(self):
+                                    self.tool_calls = []
+                                    self.tool_results = []
+                                    self.language = st.session_state.current_language
+                                    self.user_intent = "unknown"
+                                    self.run_id = str(uuid.uuid4())
+                                    self.safety_violations = []
+                            self.state = State()
+                            self.evaluation = None
+                    
+                    failed_result = FailedResult()
+                    save_evaluation_report(
+                        result=failed_result,
+                        query=user_input,
+                        language=st.session_state.current_language,
+                        conversation_id=st.session_state.conversation_id
+                    )
+                except Exception as report_e:
+                    logger.warning(f"Failed to save error evaluation report: {report_e}")
         
         # Rerun to display new messages via the chat history loop
         st.rerun()
@@ -759,7 +900,7 @@ def main():
                     title="工具使用分布",
                     color_discrete_sequence=px.colors.qualitative.Set3
                 )
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width="stretch")
         
         with col2:
             # Status pie
@@ -772,7 +913,7 @@ def main():
                     color=list(stats["statuses"].keys()),
                     color_discrete_map=status_colors
                 )
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width="stretch")
         
         # Row 3: Language & Intent
         col1, col2 = st.columns(2)
@@ -786,7 +927,7 @@ def main():
                     color=list(stats["languages"].values()),
                     color_continuous_scale="Blues"
                 )
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width="stretch")
         
         with col2:
             if stats["intents"]:
@@ -799,7 +940,7 @@ def main():
                     color=list(stats["intents"].values()),
                     color_continuous_scale="Greens"
                 )
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width="stretch")
 
 
 if __name__ == "__main__":

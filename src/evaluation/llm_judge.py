@@ -1,12 +1,15 @@
 """LLM-as-a-Judge integration for Agent Harness."""
 
 import json
+import logging
 import os
 from typing import Any, Dict, List, Optional
 from dataclasses import dataclass
 
 from src.evaluation.types import EvaluationResult, ExpectedBehavior, EvaluatorStatus
 from src.state import AgentState
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -33,11 +36,31 @@ class LLMJudge:
     """LLM-as-a-Judge evaluator using free models."""
 
     # Free models available on OpenRouter
-    MODELS = {
-        "primary": "poolside/laguna-s-2.1:free",
-        "fallback": "dots-studio/dots-3-note-preview:free",
-        "reuse_agent": "nvidia/nemotron-3-ultra-550b-a55b:free",
+    OPENROUTER_MODELS = {
+        "primary": "nvidia/nemotron-3-ultra-550b-a55b:free",
+        "fallback": "nvidia/nemotron-3.5-lightning:free",
+        "fallback2": "dots-studio/dots-3-note-preview:free",
+        "fallback3": "nvidia/nemotron-3-super-120b-a12b:free",
+        "fallback4": "cohere/north-mini-code:free",
+        "fallback5": "thinkingmachines/inkling-small:free",
     }
+
+    # Mistral 模型（需要 MISTRAL_API_KEY）
+    MISTRAL_MODELS = [
+        "mistral-moderation-2603",
+        "mistral-medium-latest",
+        "mistral-large-latest",
+        "pixtral-large-latest",
+    ]
+
+    OPENROUTER_FALLBACK_CHAIN = [
+        "nvidia/nemotron-3-ultra-550b-a55b:free",
+        "nvidia/nemotron-3.5-lightning:free",
+        "dots-studio/dots-3-note-preview:free",
+        "nvidia/nemotron-3-super-120b-a12b:free",
+        "cohere/north-mini-code:free",
+        "thinkingmachines/inkling-small:free",
+    ]
 
     def __init__(
         self,
@@ -47,19 +70,23 @@ class LLMJudge:
         timeout: float = 30.0,
         api_key: str = None,
         base_url: str = "https://openrouter.ai/api/v1",
+        fallback_chain: List[str] = None,
+        mistral_api_key: str = None,
     ):
-        self.model = model or self.MODELS["primary"]
-        self.fallback_model = self.MODELS["fallback"]
+        self.model = model or self.OPENROUTER_MODELS["primary"]
+        self.fallback_model = self.OPENROUTER_MODELS["fallback"]
         self.temperature = temperature
         self.max_tokens = max_tokens
         self.timeout = timeout
         self.api_key = api_key or os.getenv("OPENROUTER_API_KEY")
         self.base_url = base_url
+        self.mistral_api_key = mistral_api_key or os.getenv("MISTRAL_API_KEY")
         self._client = None
+        self._mistral_client = None
 
     @property
     def client(self):
-        """Lazy initialization of OpenAI client."""
+        """Lazy initialization of OpenAI client for OpenRouter."""
         if self._client is None:
             from openai import OpenAI
             self._client = OpenAI(
@@ -68,6 +95,25 @@ class LLMJudge:
                 timeout=self.timeout,
             )
         return self._client
+
+    def _get_mistral_client(self):
+        """Lazy initialization of Mistral client."""
+        if self._mistral_client is None:
+            if not self.mistral_api_key:
+                raise ValueError("MISTRAL_API_KEY not configured")
+            from openai import OpenAI
+            self._mistral_client = OpenAI(
+                api_key=self.mistral_api_key,
+                base_url="https://api.mistral.ai/v1",
+                timeout=self.timeout,
+            )
+        return self._mistral_client
+
+    def _get_client_for_model(self, model: str):
+        """Get the appropriate client for a model."""
+        if model in self.MISTRAL_MODELS:
+            return self._get_mistral_client()
+        return self.client
 
     def _load_prompt(self) -> str:
         """Load judge prompt from file."""
@@ -252,30 +298,43 @@ in the available tool results.
         )
 
     def _call_llm(self, prompt: str, model: str = None) -> Optional[Dict]:
-        """Call LLM with prompt."""
-        model = model or self.model
-        try:
-            response = self.client.chat.completions.create(
-                model=model,
-                messages=[{"role": "user", "content": prompt}],
-                temperature=self.temperature,
-                max_tokens=self.max_tokens,
-                response_format={"type": "json_object"},
-            )
-            
-            if not response.choices or not response.choices[0].message:
-                raise RuntimeError(f"LLM 回傳異常 (無 choices 或 message): {response}")
-            
-            message = response.choices[0].message
-            content = message.content or "{}"
-            
+        """Call LLM with prompt, with fallback chain including Mistral."""
+        models_to_try = [model or self.model] if model else self.OPENROUTER_FALLBACK_CHAIN
+        # Add Mistral models as additional fallback if API key is available
+        if self.mistral_api_key:
+            models_to_try += self.MISTRAL_MODELS
+        
+        last_error = None
+        for m in models_to_try:
             try:
-                return json.loads(content)
-            except json.JSONDecodeError as e:
-                raise RuntimeError(f"LLM 回傳非 JSON 格式: {e}")
+                client = self._get_client_for_model(m)
+                response = client.chat.completions.create(
+                    model=m,
+                    messages=[{"role": "user", "content": prompt}],
+                    temperature=self.temperature,
+                    max_tokens=self.max_tokens,
+                    response_format={"type": "json_object"},
+                )
                 
-        except Exception as e:
-            raise RuntimeError(f"LLM API 呼叫失敗: {e}")
+                if not response.choices or not response.choices[0].message:
+                    raise RuntimeError(f"LLM 回傳異常 (無 choices 或 message): {response}")
+                
+                message = response.choices[0].message
+                content = message.content or "{}"
+                
+                try:
+                    result = json.loads(content)
+                    result["_model_used"] = m
+                    return result
+                except json.JSONDecodeError as e:
+                    raise RuntimeError(f"LLM 回傳非 JSON 格式: {e}")
+                    
+            except Exception as e:
+                last_error = e
+                logger.warning(f"Model {m} failed: {e}, trying next...")
+                continue
+        
+        raise RuntimeError(f"All models failed. Last error: {last_error}")
 
     def evaluate(
         self,

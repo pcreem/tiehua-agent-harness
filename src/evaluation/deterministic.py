@@ -198,21 +198,31 @@ class DeterministicEvaluator(BaseEvaluator):
             if weather_result and weather_result.get("success"):
                 temp = weather_result.get("temperature")
                 weather = weather_result.get("weather")
+                weather_desc = weather_result.get("weather_description")
                 precip = weather_result.get("precipitation_probability")
 
                 has_temp = temp is not None and str(temp) in answer
                 has_weather = weather and weather.lower() in answer
+                has_weather_desc = weather_desc and weather_desc.lower() in answer
                 has_precip = precip is not None and str(precip) in answer
 
-                if not (has_temp or has_weather or has_precip):
+                if not (has_temp or has_weather or has_weather_desc or has_precip):
                     feedback.append("回答未引用天氣工具回傳的關鍵資訊（溫度/天氣狀況/降雨機率）")
 
         if state.has_called_tool("search_attractions"):
             attr_result = state.get_latest_tool_result("search_attractions")
             if attr_result and attr_result.get("success"):
-                # For now, we consider the attraction tool call as grounded if it was successful.
-                # TODO: Consider checking that the answer references at least one attraction.
-                pass
+                results = attr_result.get("results", [])
+                if results:
+                    # Check if answer references at least one attraction name
+                    found_ref = False
+                    for r in results[:5]:
+                        name = (r.get("name") or "").lower()
+                        if name and name in answer:
+                            found_ref = True
+                            break
+                    if not found_ref:
+                        feedback.append("回答未引用景點搜尋結果中的任何景點名稱")
             else:
                 feedback.append("景點搜尋工具執行失敗")
 

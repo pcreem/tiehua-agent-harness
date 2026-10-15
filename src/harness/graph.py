@@ -26,6 +26,9 @@ from src.harness.graph_types import HarnessGraphState
 from src.harness.language_detector import create_language_detector_node
 from src.harness.intent_classifier import create_intent_classifier_node
 from src.evaluator import evaluate
+from src.evaluation.registry import get_registry
+from src.evaluation.llm_judge import create_llm_judge_evaluator
+from src.safety import get_guardrails_pipeline
 
 logger = logging.getLogger(__name__)
 
@@ -36,22 +39,43 @@ def create_harness_graph(
     error_classifier: Optional[ErrorClassifier] = None,
     retry_policy: Optional[RetryPolicy] = None,
     max_retries: int = 2,
+    enable_safety: bool = True,
+    enable_llm_judge: bool = False,
 ) -> StateGraph:
     """Create the LangGraph state graph for harness execution."""
 
     evaluator_fn = evaluator_fn or evaluate
     error_classifier = error_classifier or ErrorClassifier(max_retries=max_retries)
     retry_policy = retry_policy or RetryPolicy(max_retries=max_retries)
+    safety_pipeline = get_guardrails_pipeline() if enable_safety else None
+
+    # Register LLM Judge evaluator if enabled and API key available
+    if enable_llm_judge:
+        try:
+            registry = get_registry()
+            if "llm_judge" not in registry.names():
+                registry.register("llm_judge", create_llm_judge_evaluator())
+        except Exception as e:
+            logger.warning(f"LLM Judge not available: {e}")
 
     workflow = StateGraph(HarnessGraphState)
 
     # Multilingual & Intent nodes (run once at start)
     workflow.add_node("language_detection", create_language_detector_node())
     workflow.add_node("intent_classification", create_intent_classifier_node())
+    
+    # Safety input check
+    if enable_safety:
+        workflow.add_node("safety_input_check", _create_safety_input_node(safety_pipeline))
 
     # Core execution nodes
     workflow.add_node("agent_execution", _create_agent_node(agent_fn))
-    workflow.add_node("evaluation", _create_evaluation_node(evaluator_fn))
+    
+    # Safety output check
+    if enable_safety:
+        workflow.add_node("safety_output_check", _create_safety_output_node(safety_pipeline))
+
+    workflow.add_node("evaluation", _create_evaluation_node(evaluator_fn, enable_llm_judge))
     workflow.add_node("error_classification", _create_classification_node(error_classifier))
     workflow.add_node("feedback_builder", _create_feedback_node())
     workflow.add_node("retry_decision", _create_retry_decision_node(retry_policy))
@@ -59,10 +83,18 @@ def create_harness_graph(
 
     workflow.set_entry_point("language_detection")
 
-    # Linear flow: language -> intent -> agent -> evaluation -> classification -> feedback -> retry_decision
+    # Linear flow: language -> intent -> safety_input -> agent -> safety_output -> evaluation -> classification -> feedback -> retry_decision
     workflow.add_edge("language_detection", "intent_classification")
-    workflow.add_edge("intent_classification", "agent_execution")
-    workflow.add_edge("agent_execution", "evaluation")
+    
+    if enable_safety:
+        workflow.add_edge("intent_classification", "safety_input_check")
+        workflow.add_edge("safety_input_check", "agent_execution")
+        workflow.add_edge("agent_execution", "safety_output_check")
+        workflow.add_edge("safety_output_check", "evaluation")
+    else:
+        workflow.add_edge("intent_classification", "agent_execution")
+        workflow.add_edge("agent_execution", "evaluation")
+
     workflow.add_edge("evaluation", "error_classification")
     workflow.add_edge("error_classification", "feedback_builder")
     workflow.add_edge("feedback_builder", "retry_decision")
@@ -103,14 +135,151 @@ def _create_agent_node(agent_fn: Callable[[AgentState], AgentState]):
     return node
 
 
-def _create_evaluation_node(evaluator_fn: Callable):
+def _create_safety_input_node(safety_pipeline):
+    """Node: Check user input for safety violations."""
+    def node(state: HarnessGraphState) -> HarnessGraphState:
+        agent_state = state["agent_state"]
+        logger.info("Running safety input check")
+
+        try:
+            # Get the latest user message
+            user_messages = [m for m in agent_state.messages if m.get("role") == "user"]
+            if user_messages:
+                latest_query = user_messages[-1].get("content", "")
+                safety_result = safety_pipeline.check_input(latest_query)
+                
+                # Store safety violations in agent state
+                if safety_result.violations:
+                    violations_list = []
+                    for v in safety_result.violations:
+                        violations_list.append({
+                            "type": v.violation_type.value if hasattr(v.violation_type, 'value') else v.violation_type,
+                            "severity": v.severity,
+                            "message": v.message,
+                            "location": v.location,
+                            "details": v.details,
+                            "suggested_action": v.suggested_action.value if hasattr(v.suggested_action, 'value') else v.suggested_action,
+                            "confidence": v.confidence,
+                        })
+                    # Add to existing violations
+                    existing = getattr(agent_state, 'safety_violations', []) or []
+                    agent_state.safety_violations = existing + violations_list
+                    
+                    # If blocked, set status
+                    if safety_result.action.value == "block" if hasattr(safety_result.action, 'value') else safety_result.action == "block":
+                        agent_state.set_status("failed")
+                        agent_state.add_feedback({
+                            "type": "safety_block",
+                            "message": f"Input blocked by safety: {safety_result.violations[0].message}",
+                        })
+                        logger.warning(f"Input blocked by safety: {safety_result.violations[0].message}")
+                
+                # Store sanitized input if available
+                if safety_result.sanitized_input:
+                    agent_state.metadata = agent_state.metadata or {}
+                    agent_state.metadata["sanitized_input"] = safety_result.sanitized_input
+                    
+        except Exception as e:
+            logger.exception("Safety input check failed")
+
+        new_state = state.copy()
+        new_state["agent_state"] = agent_state
+        new_state["current_node"] = "safety_input_check"
+        new_state["execution_path"] = state.get("execution_path", []) + ["safety_input_check"]
+        return new_state
+    return node
+
+
+def _create_safety_output_node(safety_pipeline):
+    """Node: Check LLM output for safety violations."""
+    def node(state: HarnessGraphState) -> HarnessGraphState:
+        agent_state = state["agent_state"]
+        logger.info("Running safety output check")
+
+        try:
+            # Get the latest assistant message
+            assistant_messages = [m for m in agent_state.messages if m.get("role") == "assistant"]
+            if assistant_messages:
+                latest_output = assistant_messages[-1].get("content", "")
+                safety_result = safety_pipeline.check_output(latest_output)
+                
+                # Store safety violations in agent state
+                if safety_result.violations:
+                    violations_list = []
+                    for v in safety_result.violations:
+                        violations_list.append({
+                            "type": v.violation_type.value if hasattr(v.violation_type, 'value') else v.violation_type,
+                            "severity": v.severity,
+                            "message": v.message,
+                            "location": v.location,
+                            "details": v.details,
+                            "suggested_action": v.suggested_action.value if hasattr(v.suggested_action, 'value') else v.suggested_action,
+                            "confidence": v.confidence,
+                        })
+                    existing = getattr(agent_state, 'safety_violations', []) or []
+                    agent_state.safety_violations = existing + violations_list
+                    
+                    if safety_result.action.value == "block" if hasattr(safety_result.action, 'value') else safety_result.action == "block":
+                        agent_state.set_status("failed")
+                        agent_state.add_feedback({
+                            "type": "safety_block",
+                            "message": f"Output blocked by safety: {safety_result.violations[0].message}",
+                        })
+                        logger.warning(f"Output blocked by safety: {safety_result.violations[0].message}")
+                        
+        except Exception as e:
+            logger.exception("Safety output check failed")
+
+        new_state = state.copy()
+        new_state["agent_state"] = agent_state
+        new_state["current_node"] = "safety_output_check"
+        new_state["execution_path"] = state.get("execution_path", []) + ["safety_output_check"]
+        return new_state
+    return node
+
+
+def _create_evaluation_node(evaluator_fn: Callable, enable_llm_judge: bool = False):
     """Node: Run deterministic evaluator + LLM Judge."""
     def node(state: HarnessGraphState) -> HarnessGraphState:
         agent_state = state["agent_state"]
         logger.info("Running evaluation")
 
         try:
+            # Run deterministic evaluation
             evaluation = evaluator_fn(agent_state.query, agent_state)
+            
+            # Run LLM Judge if enabled
+            if enable_llm_judge:
+                from src.evaluation.registry import get_registry
+                registry = get_registry()
+                if "llm_judge" in registry.names():
+                    try:
+                        llm_judge_evaluator = registry.get("llm_judge")
+                        # LLM Judge expects ExpectedBehavior, pass None for chat
+                        llm_result = llm_judge_evaluator.evaluate(
+                            query=agent_state.query,
+                            state=agent_state,
+                            expected=None,
+                        )
+                        # Merge results - prefer LLM Judge for score if available
+                        if llm_result.metadata:
+                            evaluation["evaluator"] = "llm_judge"
+                            evaluation["llm_judge_score"] = llm_result.score
+                            evaluation["llm_judge_feedback"] = llm_result.feedback
+                            if llm_result.status.value == "pass":
+                                evaluation["status"] = "pass"
+                            elif evaluation.get("status") == "pass" and llm_result.status.value != "pass":
+                                # Deterministic passed but LLM Judge failed - could flag for review
+                                evaluation["status"] = "review"
+                            evaluation["llm_judge_metadata"] = llm_result.metadata
+                    except Exception as e:
+                        logger.warning(f"LLM Judge evaluation failed: {e}")
+                        evaluation["llm_judge_error"] = str(e)
+                else:
+                    evaluation["evaluator"] = "deterministic"
+            else:
+                evaluation["evaluator"] = "deterministic"
+            
             agent_state.set_evaluation(evaluation)
         except Exception as e:
             logger.exception("Evaluation failed")
@@ -119,6 +288,7 @@ def _create_evaluation_node(evaluator_fn: Callable):
                 "error_type": "evaluation_failure",
                 "feedback": [f"Evaluation failed: {str(e)}"],
                 "retry": True,
+                "evaluator": "deterministic",
             }
             agent_state.set_evaluation(evaluation)
 
@@ -276,13 +446,18 @@ class HarnessGraphRunner:
         evaluator_fn: Optional[Callable] = None,
         max_retries: int = 2,
         thread_id: Optional[str] = None,
+        enable_safety: bool = True,
+        enable_llm_judge: bool = False,
     ):
         self.graph = create_harness_graph(
             agent_fn=agent_fn,
             evaluator_fn=evaluator_fn,
             max_retries=max_retries,
+            enable_safety=enable_safety,
+            enable_llm_judge=enable_llm_judge,
         )
         self.thread_id = thread_id or f"run_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        self.max_retries = max_retries
 
     def run(self, query: str, config: Optional[dict] = None, max_retries: Optional[int] = None) -> AgentState:
         """Execute the harness graph with a query."""
@@ -368,10 +543,14 @@ def create_harness_graph_runner(
     agent_fn: Callable[[AgentState], AgentState],
     evaluator_fn: Optional[Callable] = None,
     max_retries: int = 2,
+    enable_safety: bool = True,
+    enable_llm_judge: bool = False,
 ) -> HarnessGraphRunner:
     """Factory function to create harness graph runner."""
     return HarnessGraphRunner(
         agent_fn=agent_fn,
         evaluator_fn=evaluator_fn,
         max_retries=max_retries,
+        enable_safety=enable_safety,
+        enable_llm_judge=enable_llm_judge,
     )
