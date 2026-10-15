@@ -45,14 +45,6 @@ class LLMJudge:
         "fallback5": "thinkingmachines/inkling-small:free",
     }
 
-    # Mistral 模型（需要 MISTRAL_API_KEY）
-    MISTRAL_MODELS = [
-        "mistral-small-latest",
-        "mistral-medium-latest",
-        "magistral-small-latest",
-        "magistral-medium-latest",
-    ]
-
     OPENROUTER_FALLBACK_CHAIN = [
         "nvidia/nemotron-3-ultra-550b-a55b:free",
         "nvidia/nemotron-3.5-lightning:free",
@@ -71,7 +63,6 @@ class LLMJudge:
         api_key: str = None,
         base_url: str = "https://openrouter.ai/api/v1",
         fallback_chain: List[str] = None,
-        mistral_api_key: str = None,
     ):
         self.model = model or self.OPENROUTER_MODELS["primary"]
         self.fallback_model = self.OPENROUTER_MODELS["fallback"]
@@ -80,9 +71,7 @@ class LLMJudge:
         self.timeout = timeout
         self.api_key = api_key or os.getenv("OPENROUTER_API_KEY")
         self.base_url = base_url
-        self.mistral_api_key = mistral_api_key or os.getenv("MISTRAL_API_KEY")
         self._client = None
-        self._mistral_client = None
 
     @property
     def client(self):
@@ -95,25 +84,6 @@ class LLMJudge:
                 timeout=self.timeout,
             )
         return self._client
-
-    def _get_mistral_client(self):
-        """Lazy initialization of Mistral client."""
-        if self._mistral_client is None:
-            if not self.mistral_api_key:
-                raise ValueError("MISTRAL_API_KEY not configured")
-            from openai import OpenAI
-            self._mistral_client = OpenAI(
-                api_key=self.mistral_api_key,
-                base_url="https://api.mistral.ai/v1",
-                timeout=self.timeout,
-            )
-        return self._mistral_client
-
-    def _get_client_for_model(self, model: str):
-        """Get the appropriate client for a model."""
-        if model in self.MISTRAL_MODELS:
-            return self._get_mistral_client()
-        return self.client
 
     def _load_prompt(self) -> str:
         """Load judge prompt from file."""
@@ -298,17 +268,13 @@ in the available tool results.
         )
 
     def _call_llm(self, prompt: str, model: str = None) -> Optional[Dict]:
-        """Call LLM with prompt, with fallback chain including Mistral."""
+        """Call LLM with prompt, with fallback chain."""
         models_to_try = [model or self.model] if model else self.OPENROUTER_FALLBACK_CHAIN
-        # Add Mistral models as additional fallback if API key is available
-        if self.mistral_api_key:
-            models_to_try += self.MISTRAL_MODELS
         
         last_error = None
         for m in models_to_try:
             try:
-                client = self._get_client_for_model(m)
-                response = client.chat.completions.create(
+                response = self.client.chat.completions.create(
                     model=m,
                     messages=[{"role": "user", "content": prompt}],
                     temperature=self.temperature,

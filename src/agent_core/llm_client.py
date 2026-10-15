@@ -1,4 +1,4 @@
-"""LLM Client wrapper for OpenRouter API with multi-model fallback (including Mistral)."""
+"""LLM Client wrapper for Kilo AI / OpenRouter API with multi-model fallback."""
 
 import os
 import time
@@ -12,6 +12,11 @@ from src.observability import get_logger, get_metrics, trace_llm_call
 logger = get_logger(__name__)
 
 
+# Kilo AI 模型清單（優先序：越前面越優先使用）
+KILO_MODELS = [
+    "nvidia/nemotron-3-ultra-550b-a55b:free",      # 目前可用的免費模型
+]
+
 # OpenRouter 免費模型清單（優先序：越前面越優先使用）
 OPENROUTER_FREE_MODELS = [
     "nvidia/nemotron-3-ultra-550b-a55b:free",      # 原預設模型
@@ -23,15 +28,6 @@ OPENROUTER_FREE_MODELS = [
     "apodex/apodex-1.1-mini:free",                  # 輕量
 ]
 
-# Mistral 模型清單（需要 MISTRAL_API_KEY）
-# 注意：mistral-moderation-2603 是內容審核模型，不支援 chat completions
-MISTRAL_MODELS = [
-    "mistral-small-latest",       # 輕量快速
-    "mistral-medium-latest",      # 中等規模模型，平衡速度與品質
-    "magistral-small-latest",     # 推理增強模型
-    "magistral-medium-latest",    # 推理增強大模型
-]
-
 
 class ModelExhaustedError(Exception):
     """當所有模型都用盡額度時拋出"""
@@ -41,38 +37,40 @@ class ModelExhaustedError(Exception):
 
 
 class LLMClient:
-    """Wrapper for OpenRouter/OpenAI LLM client with multi-model fallback across providers."""
+    """Wrapper for Kilo/OpenRouter LLM client with multi-model fallback across providers."""
 
     def __init__(
         self,
         api_key: str,
-        base_url: str = "https://openrouter.ai/api/v1",
+        base_url: str = "https://api.kilo.ai/api/gateway",  # Kilo AI gateway as default
         model: str = "nvidia/nemotron-3-ultra-550b-a55b:free",
         fallback_models: Optional[List[str]] = None,
         timeout: float = 30.0,
-        mistral_api_key: Optional[str] = None,
+        kilo_api_key: Optional[str] = None,
+        openrouter_api_key: Optional[str] = None,
     ):
         self.api_key = api_key
         self.base_url = base_url
         self._primary_model = model
-        self._openrouter_fallback = fallback_models or OPENROUTER_FREE_MODELS
-        self.mistral_api_key = mistral_api_key or os.getenv("MISTRAL_API_KEY")
+        self._kilo_fallback = fallback_models or KILO_MODELS
+        self.kilo_api_key = kilo_api_key or os.getenv("KILO_API_KEY") or api_key
+        self.openrouter_api_key = openrouter_api_key or os.getenv("OPENROUTER_API_KEY")
         self.timeout = timeout
 
-        # OpenRouter client
-        self.client = OpenAI(api_key=api_key, base_url=base_url, timeout=timeout)
+        # Kilo client (primary)
+        self.client = OpenAI(api_key=self.kilo_api_key, base_url=base_url, timeout=timeout)
         
-        # Mistral client (lazy init)
-        self._mistral_client = None
+        # OpenRouter client (fallback)
+        self._openrouter_client = None
         
-        # 建立完整的模型鏈：OpenRouter models -> Mistral models
-        self._all_models = [model] + [m for m in self._openrouter_fallback if m != model]
-        if self.mistral_api_key:
-            self._all_models += MISTRAL_MODELS
+        # 建立完整的模型鏈：Kilo models -> OpenRouter models
+        self._all_models = [model] + [m for m in self._kilo_fallback if m != model]
+        if self.openrouter_api_key:
+            self._all_models += [m for m in OPENROUTER_FREE_MODELS if m not in self._all_models]
             
         self._current_model_idx = 0
         self._model = self._all_models[0]  # 目前使用的模型
-        self._current_provider = "openrouter"  # 追蹤目前 provider
+        self._current_provider = "kilo"  # 追蹤目前 provider
 
     @property
     def model(self) -> str:
@@ -84,25 +82,28 @@ class LLMClient:
         if value in self._all_models:
             self._current_model_idx = self._all_models.index(value)
             # 判斷 provider
-            if value in MISTRAL_MODELS:
-                self._current_provider = "mistral"
+            if value in KILO_MODELS:
+                self._current_provider = "kilo"
             else:
                 self._current_provider = "openrouter"
 
+    def _get_openrouter_client(self):
+        """Lazy initialization of OpenRouter client."""
+        if self._openrouter_client is None:
+            if not self.openrouter_api_key:
+                raise ValueError("OPENROUTER_API_KEY not configured")
+            self._openrouter_client = OpenAI(
+                api_key=self.openrouter_api_key,
+                base_url="https://openrouter.ai/api/v1",
+                timeout=self.timeout,
+            )
+        return self._openrouter_client
+
     def _get_client_for_model(self, model: str):
         """Get the appropriate client for a model."""
-        if model in MISTRAL_MODELS:
-            if self._mistral_client is None:
-                if not self.mistral_api_key:
-                    raise ValueError("MISTRAL_API_KEY not configured")
-                # Mistral uses OpenAI-compatible API
-                self._mistral_client = OpenAI(
-                    api_key=self.mistral_api_key,
-                    base_url="https://api.mistral.ai/v1",
-                    timeout=self.timeout,
-                )
-            return self._mistral_client
-        return self.client
+        if model in OPENROUTER_FREE_MODELS:
+            return self._get_openrouter_client()
+        return self.client  # Kilo client
 
     def complete(
         self,
@@ -142,7 +143,7 @@ class LLMClient:
         # 所有模型都失敗
         self._current_model_idx = 0  # 重置
         self._model = self._all_models[0]
-        self._current_provider = "openrouter" if self._all_models[0] not in MISTRAL_MODELS else "mistral"
+        self._current_provider = "kilo" if self._all_models[0] in KILO_MODELS else "openrouter"
         raise ModelExhaustedError(tried_models)
 
     def _call_single_model(
@@ -158,7 +159,7 @@ class LLMClient:
 
         # 取得正確的 client
         client = self._get_client_for_model(model)
-        provider = "mistral" if model in MISTRAL_MODELS else "openrouter"
+        provider = "kilo" if model in KILO_MODELS else "openrouter"
 
         with trace_llm_call(model) as span:
             response = client.chat.completions.create(
@@ -189,31 +190,31 @@ class LLMClient:
         """取得所有可用模型清單"""
         return self._all_models.copy()
 
+    def get_kilo_models(self) -> List[str]:
+        """取得 Kilo 模型清單"""
+        return [m for m in self._all_models if m in KILO_MODELS]
+
     def get_openrouter_models(self) -> List[str]:
         """取得 OpenRouter 模型清單"""
-        return [m for m in self._all_models if m not in MISTRAL_MODELS]
-
-    def get_mistral_models(self) -> List[str]:
-        """取得 Mistral 模型清單"""
-        return [m for m in self._all_models if m in MISTRAL_MODELS]
+        return [m for m in self._all_models if m in OPENROUTER_FREE_MODELS]
 
     def reset_to_primary(self):
         """重置回主要模型"""
         self._current_model_idx = 0
         self._model = self._all_models[0]
-        self._current_provider = "openrouter" if self._all_models[0] not in MISTRAL_MODELS else "mistral"
+        self._current_provider = "kilo" if self._all_models[0] in KILO_MODELS else "openrouter"
 
     @property
     def primary_model(self) -> str:
         return self._primary_model
 
     @property
-    def openrouter_fallback_models(self) -> List[str]:
-        return self._openrouter_fallback.copy()
+    def kilo_fallback_models(self) -> List[str]:
+        return self._kilo_fallback.copy()
 
     @property
-    def mistral_fallback_models(self) -> List[str]:
-        return MISTRAL_MODELS.copy()
+    def openrouter_fallback_models(self) -> List[str]:
+        return OPENROUTER_FREE_MODELS.copy()
 
     @property
     def current_provider(self) -> str:

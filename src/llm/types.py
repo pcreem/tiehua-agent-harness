@@ -118,4 +118,5 @@ class LLMConfig:
     max_retries: int = 2
     temperature: float = 0.3
     max_tokens: Optional[int] = None
-    mistral_api_key: Optional[str] = None
+    kilo_api_key: Optional[str] = None
+    openrouter_api_key: Optional[str] = None

@@ -6,9 +6,11 @@ from .types import (
     LLMResponse,
     LLMTool,
     LLMConfig,
-    LLMConfig,
 )
-from .client import OpenRouterClient, create_llm_client
+from .client import KiloClient, create_llm_client
+
+# Backwards compatibility
+OpenRouterClient = KiloClient
 
 __all__ = [
     "LLMClient",
@@ -16,6 +18,7 @@ __all__ = [
     "LLMResponse",
     "LLMTool",
     "LLMConfig",
+    "KiloClient",
     "OpenRouterClient",
     "create_llm_client",
 ]
