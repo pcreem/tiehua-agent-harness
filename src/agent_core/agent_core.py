@@ -5,7 +5,7 @@ import json
 import time
 from typing import List, Dict, Any, Optional, Literal
 
-from src.agent_core.llm_client import LLMClient
+from src.agent_core.llm_client import LLMClient, ModelExhaustedError
 from src.agent_core.tool_executor import ToolExecutor
 from src.agent_core.message_formatter import MessageFormatter
 from src.state import AgentState, initialize_state
@@ -17,6 +17,9 @@ from src.observability import (
     agent_logger, tool_logger, llm_logger
 )
 
+# Import new Kilo-based LLM client
+from src.llm.client import create_llm_client as create_kilo_llm_client
+
 
 class AgentCore:
     """Core agent orchestration logic."""
@@ -25,31 +28,32 @@ class AgentCore:
         self,
         api_key: Optional[str] = None,
         model: str = "nvidia/nemotron-3-ultra-550b-a55b:free",
-        base_url: str = "https://openrouter.ai/api/v1",
+        base_url: str = "https://api.kilo.ai/api/gateway",
         max_tool_calls: int = 5,
         temperature: float = 0.3,
         llm_client=None,
         fallback_models: Optional[List[str]] = None,
         prompt_manager=None,  # Lazy import to avoid circular dependency
+        kilo_api_key: Optional[str] = None,
     ):
         self.max_tool_calls = max_tool_calls
         self.temperature = temperature
         self.model = model
-        self.api_key = api_key or os.getenv("OPENROUTER_API_KEY")
+        self.api_key = api_key or os.getenv("KILO_API_KEY")
 
-        if not self.api_key:
-            raise ValueError("OPENROUTER_API_KEY not set")
-
-        # Use provided LLM client or create default OpenRouter client with fallback
+        # Use provided LLM client or create new Kilo-based client (Kilo models only)
         self.llm_client = llm_client
         if self.llm_client is None:
-            from src.agent_core.llm_client import LLMClient
-            self.llm_client = LLMClient(
-                api_key=self.api_key,
-                base_url=base_url,
+            kilo_key = kilo_api_key or os.getenv("KILO_API_KEY") or self.api_key
+            
+            self.llm_client = create_kilo_llm_client(
                 model=model,
-                fallback_models=fallback_models,
-                timeout=30.0,
+                api_key=self.api_key,  # For backwards compat
+                base_url=base_url,
+                timeout=60.0,
+                max_retries=2,
+                temperature=temperature,
+                kilo_api_key=kilo_key,
             )
 
         # Initialize tools
@@ -103,14 +107,45 @@ class AgentCore:
         if "output_format" not in state.metadata:
             state.metadata["output_format"] = self.default_output_format
 
+        # Extract city from query for prompt templating
+        city = self._extract_city_from_query(state.query)
+        if city:
+            state.metadata["city"] = city
+
         # Compose system prompt from modules
         system_prompt = self.prompt_manager.compose_system_prompt(state)
+
+        # Substitute placeholders in system prompt
+        if city:
+            system_prompt = system_prompt.replace("{city}", city)
 
         # Append tool usage instructions (dynamic based on available tools)
         tool_instructions = self._build_tool_instructions()
         system_prompt += f"\n\n{tool_instructions}"
 
         return system_prompt
+
+    def _extract_city_from_query(self, query: str) -> Optional[str]:
+        """Extract city name from user query."""
+        # Known cities in Taiwan
+        cities = [
+            "台北", "臺北", "新北", "桃園", "台中", "臺中", "台南", "臺南", "高雄",
+            "基隆", "新竹", "嘉義", "宜蘭", "花蓮", "台東", "臺東", "澎湖", "金門", "馬祖",
+            "苗栗", "彰化", "南投", "雲林", "屏東", "連江"
+        ]
+        for city in cities:
+            if city in query:
+                # Normalize to common form
+                if city in ["臺北", "台北"]:
+                    return "台北"
+                elif city in ["臺中", "台中"]:
+                    return "台中"
+                elif city in ["臺南", "台南"]:
+                    return "台南"
+                elif city in ["臺東", "台東"]:
+                    return "台東"
+                return city
+        return None
 
     def _build_tool_instructions(self) -> str:
         """Build tool usage instructions."""
@@ -198,13 +233,37 @@ class AgentCore:
                 state.answer = final_content
                 break
 
+            # Normalize tool calls to handle both dict and object formats
+            def normalize_tool_call(tc):
+                if isinstance(tc, dict):
+                    return {
+                        "id": tc.get("id", ""),
+                        "type": tc.get("type", "function"),
+                        "function": {
+                            "name": tc.get("function", {}).get("name", ""),
+                            "arguments": tc.get("function", {}).get("arguments", "{}")
+                        }
+                    }
+                else:
+                    return {
+                        "id": tc.id,
+                        "type": tc.type,
+                        "function": {
+                            "name": tc.function.name,
+                            "arguments": tc.function.arguments
+                        }
+                    }
+
+            normalized_tool_calls = [normalize_tool_call(tc) for tc in message.tool_calls]
+
             # Execute tool calls
-            tool_calls_data = self._format_tool_calls(message.tool_calls)
+            tool_calls_data = self._format_tool_calls(normalized_tool_calls)
             state.add_message("assistant", message.content or "", tool_calls=tool_calls_data)
 
-            for tool_call in message.tool_calls:
-                name = tool_call.function.name
-                args = json.loads(tool_call.function.arguments)
+            for tool_call in normalized_tool_calls:
+                name = tool_call["function"]["name"]
+                args = json.loads(tool_call["function"]["arguments"])
+                tool_call_id = tool_call["id"]
 
                 # Inject language from state into tool arguments
                 if "language" not in args and state.language:
@@ -223,9 +282,9 @@ class AgentCore:
                     result = self._execute_tool(name, args)
 
                 # Record tool call/result in state
-                state.add_tool_call(name, args, tool_call.id)
-                state.add_tool_result(name, args, result, tool_call.id)
-                state.add_message("tool", json.dumps(result, ensure_ascii=False), tool_call_id=tool_call.id)
+                state.add_tool_call(name, args, tool_call_id)
+                state.add_tool_result(name, args, result, tool_call_id)
+                state.add_message("tool", json.dumps(result, ensure_ascii=False), tool_call_id=tool_call_id)
 
                 tool_call_count += 1
 
@@ -252,17 +311,61 @@ class AgentCore:
     def _call_llm(self, messages, tools):
         from src.observability import trace_llm_call, get_logger
         from src.agent_core.llm_client import ModelExhaustedError
+        from src.llm.types import LLMMessage, LLMTool
 
         logger = get_logger(__name__)
+
+        # Convert dict messages to LLMMessage objects
+        llm_messages = []
+        for msg in messages:
+            if isinstance(msg, dict):
+                role = msg.get("role", "user")
+                content = msg.get("content")
+                tool_calls = msg.get("tool_calls")
+                tool_call_id = msg.get("tool_call_id")
+                name = msg.get("name")
+                
+                if role == "system":
+                    llm_messages.append(LLMMessage.system(content or ""))
+                elif role == "user":
+                    llm_messages.append(LLMMessage.user(content or ""))
+                elif role == "assistant":
+                    llm_messages.append(LLMMessage.assistant(content, tool_calls))
+                elif role == "tool":
+                    llm_messages.append(LLMMessage.tool(content or "", tool_call_id or "", name))
+            else:
+                llm_messages.append(msg)
+
+        # Convert dict tools to LLMTool objects
+        llm_tools = []
+        for tool in tools:
+            if isinstance(tool, dict):
+                func = tool.get("function", {})
+                llm_tools.append(LLMTool(
+                    name=func.get("name", ""),
+                    description=func.get("description", ""),
+                    parameters=func.get("parameters", {})
+                ))
+            else:
+                llm_tools.append(tool)
 
         with trace_llm_call(self.model) as span:
             try:
                 response = self.llm_client.complete(
-                    messages=messages,
-                    tools=tools,
+                    messages=llm_messages,
+                    tools=llm_tools,
                     temperature=self.temperature,
                 )
-                return response
+                # Convert LLMResponse to OpenAI-compatible format for rest of code
+                from types import SimpleNamespace
+                mock_response = SimpleNamespace()
+                mock_choice = SimpleNamespace()
+                mock_message = SimpleNamespace()
+                mock_message.content = response.content
+                mock_message.tool_calls = response.tool_calls
+                mock_choice.message = mock_message
+                mock_response.choices = [mock_choice]
+                return mock_response
             except ModelExhaustedError as e:
                 # All models exhausted - return a fallback response
                 logger.error("all_models_exhausted", tried_models=e.tried_models)
@@ -283,14 +386,26 @@ class AgentCore:
         formatter = MessageFormatter()
         tool_calls_data = []
         for tc in tool_calls:
-            tool_calls_data.append({
-                "id": tc.id,
-                "type": tc.type,
-                "function": {
-                    "name": tc.function.name,
-                    "arguments": tc.function.arguments
-                }
-            })
+            if isinstance(tc, dict):
+                # Already a dict
+                tool_calls_data.append({
+                    "id": tc.get("id", ""),
+                    "type": tc.get("type", "function"),
+                    "function": {
+                        "name": tc.get("function", {}).get("name", ""),
+                        "arguments": tc.get("function", {}).get("arguments", "{}")
+                    }
+                })
+            else:
+                # Object with attributes
+                tool_calls_data.append({
+                    "id": tc.id,
+                    "type": tc.type,
+                    "function": {
+                        "name": tc.function.name,
+                        "arguments": tc.function.arguments
+                    }
+                })
         return tool_calls_data
 
     def _execute_tool(self, name: str, args: Dict[str, Any]) -> Dict[str, Any]:

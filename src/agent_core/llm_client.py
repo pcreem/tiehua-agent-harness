@@ -1,4 +1,4 @@
-"""LLM Client wrapper for Kilo AI / OpenRouter API with multi-model fallback."""
+"""LLM Client wrapper for Kilo AI API with multi-model fallback (Kilo models only)."""
 
 import os
 import time
@@ -12,20 +12,20 @@ from src.observability import get_logger, get_metrics, trace_llm_call
 logger = get_logger(__name__)
 
 
-# Kilo AI 模型清單（優先序：越前面越優先使用）
+# Kilo 模型清單（優先序：越前面越優先使用）
+# 註：模型 ID 必須與 Kilo API 實際提供的完全一致
+# 只有帶 :free 後綴或 kilo-auto/free 的模型才是真正免費的
 KILO_MODELS = [
-    "nvidia/nemotron-3-ultra-550b-a55b:free",      # 目前可用的免費模型
-]
-
-# OpenRouter 免費模型清單（優先序：越前面越優先使用）
-OPENROUTER_FREE_MODELS = [
-    "nvidia/nemotron-3-ultra-550b-a55b:free",      # 原預設模型
-    "poolside/laguna-s-2.1:free",                   # 程式碼生成強
-    "nvidia/nemotron-3.5-lightning:free",           # 輕量快速
-    "dots-studio/dots-3-note-preview:free",         # 實驗性
-    "nvidia/nemotron-3-super-120b-a12b:free",       # 大模型
-    "thinkingmachines/inkling:free",                # 思考型
-    "apodex/apodex-1.1-mini:free",                  # 輕量
+    "nvidia/nemotron-3-ultra-550b-a55b:free",      # 原預設模型（免費，但有時過載）
+    "kilo-auto/free",                                # Kilo 自動選擇免費模型
+    "liquid/lfm-2.5-2.6b:free",                     # 免費模型
+    "nvidia/nemotron-3.5-lightning:free",           # 免費模型
+    "dots-studio/dots-3-note-preview:free",         # 免費模型
+    "nvidia/nemotron-3-super-120b-a12b:free",       # 免費模型
+    "poolside/laguna-s-2.1:free",                   # 免費模型
+    "poolside/laguna-xs-2.1:free",                  # 免費模型
+    "cohere/north-mini-code:free",                  # 免費模型
+    "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free", # 免費模型
 ]
 
 
@@ -37,7 +37,7 @@ class ModelExhaustedError(Exception):
 
 
 class LLMClient:
-    """Wrapper for Kilo/OpenRouter LLM client with multi-model fallback across providers."""
+    """Wrapper for Kilo LLM client with multi-model fallback (Kilo models only)."""
 
     def __init__(
         self,
@@ -45,32 +45,23 @@ class LLMClient:
         base_url: str = "https://api.kilo.ai/api/gateway",  # Kilo AI gateway as default
         model: str = "nvidia/nemotron-3-ultra-550b-a55b:free",
         fallback_models: Optional[List[str]] = None,
-        timeout: float = 30.0,
+        timeout: float = 60.0,
         kilo_api_key: Optional[str] = None,
-        openrouter_api_key: Optional[str] = None,
     ):
         self.api_key = api_key
         self.base_url = base_url
         self._primary_model = model
         self._kilo_fallback = fallback_models or KILO_MODELS
         self.kilo_api_key = kilo_api_key or os.getenv("KILO_API_KEY") or api_key
-        self.openrouter_api_key = openrouter_api_key or os.getenv("OPENROUTER_API_KEY")
         self.timeout = timeout
 
-        # Kilo client (primary)
+        # Kilo client (only client needed)
         self.client = OpenAI(api_key=self.kilo_api_key, base_url=base_url, timeout=timeout)
-        
-        # OpenRouter client (fallback)
-        self._openrouter_client = None
-        
-        # 建立完整的模型鏈：Kilo models -> OpenRouter models
+
+        # 建立完整的模型鏈：只使用 Kilo models
         self._all_models = [model] + [m for m in self._kilo_fallback if m != model]
-        if self.openrouter_api_key:
-            self._all_models += [m for m in OPENROUTER_FREE_MODELS if m not in self._all_models]
-            
         self._current_model_idx = 0
         self._model = self._all_models[0]  # 目前使用的模型
-        self._current_provider = "kilo"  # 追蹤目前 provider
 
     @property
     def model(self) -> str:
@@ -81,29 +72,10 @@ class LLMClient:
         self._model = value
         if value in self._all_models:
             self._current_model_idx = self._all_models.index(value)
-            # 判斷 provider
-            if value in KILO_MODELS:
-                self._current_provider = "kilo"
-            else:
-                self._current_provider = "openrouter"
-
-    def _get_openrouter_client(self):
-        """Lazy initialization of OpenRouter client."""
-        if self._openrouter_client is None:
-            if not self.openrouter_api_key:
-                raise ValueError("OPENROUTER_API_KEY not configured")
-            self._openrouter_client = OpenAI(
-                api_key=self.openrouter_api_key,
-                base_url="https://openrouter.ai/api/v1",
-                timeout=self.timeout,
-            )
-        return self._openrouter_client
 
     def _get_client_for_model(self, model: str):
-        """Get the appropriate client for a model."""
-        if model in OPENROUTER_FREE_MODELS:
-            return self._get_openrouter_client()
-        return self.client  # Kilo client
+        """Get the client for a model - all models use Kilo client."""
+        return self.client
 
     def complete(
         self,
@@ -143,7 +115,6 @@ class LLMClient:
         # 所有模型都失敗
         self._current_model_idx = 0  # 重置
         self._model = self._all_models[0]
-        self._current_provider = "kilo" if self._all_models[0] in KILO_MODELS else "openrouter"
         raise ModelExhaustedError(tried_models)
 
     def _call_single_model(
@@ -157,9 +128,8 @@ class LLMClient:
         """呼叫單一模型，成功時更新 current model"""
         start_time = time.time()
 
-        # 取得正確的 client
+        # 取得正確的 client (所有模型都用 Kilo client)
         client = self._get_client_for_model(model)
-        provider = "kilo" if model in KILO_MODELS else "openrouter"
 
         with trace_llm_call(model) as span:
             response = client.chat.completions.create(
@@ -174,12 +144,11 @@ class LLMClient:
 
             span.set_attribute("llm.prompt_tokens", response.usage.prompt_tokens if response.usage else 0)
             span.set_attribute("llm.completion_tokens", response.usage.completion_tokens if response.usage else 0)
-            span.set_attribute("llm.provider", provider)
+            span.set_attribute("llm.provider", "kilo")
 
             # 成功：更新當前模型為此模型（下次優先使用）
             self._model = model
             self._current_model_idx = self._all_models.index(model)
-            self._current_provider = provider
 
             return response
 
@@ -194,15 +163,10 @@ class LLMClient:
         """取得 Kilo 模型清單"""
         return [m for m in self._all_models if m in KILO_MODELS]
 
-    def get_openrouter_models(self) -> List[str]:
-        """取得 OpenRouter 模型清單"""
-        return [m for m in self._all_models if m in OPENROUTER_FREE_MODELS]
-
     def reset_to_primary(self):
         """重置回主要模型"""
         self._current_model_idx = 0
         self._model = self._all_models[0]
-        self._current_provider = "kilo" if self._all_models[0] in KILO_MODELS else "openrouter"
 
     @property
     def primary_model(self) -> str:
@@ -211,11 +175,3 @@ class LLMClient:
     @property
     def kilo_fallback_models(self) -> List[str]:
         return self._kilo_fallback.copy()
-
-    @property
-    def openrouter_fallback_models(self) -> List[str]:
-        return OPENROUTER_FREE_MODELS.copy()
-
-    @property
-    def current_provider(self) -> str:
-        return self._current_provider
