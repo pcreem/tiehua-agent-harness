@@ -24,11 +24,12 @@ OPENROUTER_FREE_MODELS = [
 ]
 
 # Mistral 模型清單（需要 MISTRAL_API_KEY）
+# 注意：mistral-moderation-2603 是內容審核模型，不支援 chat completions
 MISTRAL_MODELS = [
-    "mistral-moderation-2603",   # 內容審核模型，較快
+    "mistral-small-latest",       # 輕量快速
     "mistral-medium-latest",      # 中等規模模型，平衡速度與品質
-    "mistral-large-latest",       # 大模型，較強推理能力
-    "pixtral-large-latest",       # 多模態模型
+    "magistral-small-latest",     # 推理增強模型
+    "magistral-medium-latest",    # 推理增強大模型
 ]
 
 

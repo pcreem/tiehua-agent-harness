@@ -19,10 +19,10 @@ logger = logging.getLogger(__name__)
 
 # Mistral 模型
 MISTRAL_MODELS = [
-    "mistral-moderation-2603",
+    "mistral-small-latest",
     "mistral-medium-latest",
-    "mistral-large-latest",
-    "pixtral-large-latest",
+    "magistral-small-latest",
+    "magistral-medium-latest",
 ]
 
 
